@@ -29,8 +29,9 @@ export function Alerts({ medications }: AlertsProps) {
     return null;
   }
 
-  const lowStockAlerts = medications.filter(m => m.quantity < 5);
-  const doseTimeAlerts = medications.filter(m => m.dose_times.includes(currentTime));
+  const activeMedications = medications.filter(m => m.active !== false);
+  const lowStockAlerts = activeMedications.filter(m => m.quantity < 5);
+  const doseTimeAlerts = activeMedications.filter(m => m.dose_times.includes(currentTime));
 
   if (lowStockAlerts.length === 0 && doseTimeAlerts.length === 0) {
     return (

@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { PlusCircle, Trash2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -27,7 +28,8 @@ const formSchema = z.object({
   expiryDate: z.string().optional(),
   dose_times: z.array(
     z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)')
-  ).min(1, 'At least one dose time is required.'),
+  ).min(0),
+  active: z.boolean().default(true),
 });
 
 type MedicationFormProps = {
@@ -43,7 +45,8 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
       name: medication?.name || '',
       quantity: medication?.quantity || 0,
       expiryDate: medication?.expiryDate || '',
-      dose_times: medication?.dose_times || ['09:00'],
+      dose_times: medication?.dose_times && medication.dose_times.length > 0 ? medication.dose_times : ['09:00'],
+      active: medication?.active ?? true,
     },
   });
 
@@ -56,8 +59,11 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
     onSubmit({
       ...values,
       id: medication?.id || 0,
+      dose_times: values.active ? values.dose_times : []
     });
   }
+
+  const isActive = form.watch('active');
 
   return (
     <Form {...form}>
@@ -101,41 +107,63 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
             </FormItem>
           )}
         />
-
-        <div>
-           <FormLabel>Dose Times</FormLabel>
-           <div className="mt-2 space-y-2">
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex items-center gap-2">
-                <FormField
-                  control={form.control}
-                  name={`dose_times.${index}`}
-                  render={({ field }) => (
-                    <FormItem className="flex-grow">
-                      <FormControl>
-                         <Input type="time" {...field} />
-                      </FormControl>
-                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
-                    <Trash2 className="h-4 w-4" />
-                </Button>
+        
+        <FormField
+          control={form.control}
+          name="active"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+              <div className="space-y-0.5">
+                <FormLabel>Enabled</FormLabel>
               </div>
-            ))}
-             <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => append('09:00')}
-              >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Dose Time
-            </Button>
-           </div>
-           
-        </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        {isActive && (
+            <div>
+            <FormLabel>Dose Times</FormLabel>
+            <div className="mt-2 space-y-2">
+                {fields.map((field, index) => (
+                <div key={field.id} className="flex items-center gap-2">
+                    <FormField
+                    control={form.control}
+                    name={`dose_times.${index}`}
+                    render={({ field }) => (
+                        <FormItem className="flex-grow">
+                        <FormControl>
+                            <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} disabled={fields.length <= 1}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+                ))}
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append('09:00')}
+                >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Dose Time
+                </Button>
+            </div>
+            {form.formState.errors.dose_times && (
+                 <p className="text-sm font-medium text-destructive mt-2">{form.formState.errors.dose_times.message}</p>
+            )}
+            </div>
+        )}
 
         <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>

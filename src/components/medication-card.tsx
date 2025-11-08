@@ -1,6 +1,6 @@
 import type { Medication } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Package, Pill, Calendar, Edit, Trash2 } from 'lucide-react';
+import { Clock, Package, Pill, Calendar, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import { RefillPredictor } from './refill-predictor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { MedicationForm } from './medication-form';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
 type MedicationCardProps = {
   medication: Medication;
@@ -35,7 +36,7 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const handleFormSubmit = (updatedMedication: Medication) => {
-    onUpdate(updatedMedication);
+    onUpdate({ ...updatedMedication, active: medication.active });
     setIsEditDialogOpen(false);
   };
 
@@ -47,8 +48,15 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
     onDelete(medication.id);
   }
 
+  const handleToggleActive = () => {
+    onUpdate({ ...medication, active: !(medication.active ?? true) });
+  };
+
   return (
-    <Card className="flex flex-col transition-all hover:shadow-md">
+    <Card className={cn(
+      "flex flex-col transition-all hover:shadow-md",
+      medication.active === false && "bg-muted/50 opacity-70"
+    )}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <CardTitle className="flex items-center gap-3">
@@ -74,7 +82,7 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
               </DialogContent>
             </Dialog>
             
-            {medication.quantity > 0 ? (
+            {medication.quantity > 0 && medication.active !== false ? (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
@@ -83,14 +91,19 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Archive Medication?</AlertDialogTitle>
+                      <AlertDialogTitle>Archive or Disable Medication?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This medication still has quantity remaining. Archiving it will set the quantity to 0 and disable reminders. You can then delete it.
+                          This medication has quantity remaining. You can disable it to hide it and pause reminders, or archive it to set its quantity to 0.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleArchive}>Archive</AlertDialogAction>
+                    <AlertDialogFooter className="sm:justify-between">
+                      <AlertDialogAction onClick={handleToggleActive} variant="outline">
+                        <EyeOff className="mr-2"/> Disable
+                      </AlertDialogAction>
+                      <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-2 sm:mt-0">
+                         <AlertDialogCancel>Cancel</AlertDialogCancel>
+                         <AlertDialogAction onClick={handleArchive}>Archive</AlertDialogAction>
+                      </div>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
@@ -117,6 +130,11 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
             )}
           </div>
         </div>
+        {medication.active === false && (
+          <Badge variant="secondary" className="w-fit">
+            <EyeOff className="mr-2" /> Disabled
+          </Badge>
+        )}
       </CardHeader>
       <CardContent className="flex flex-grow flex-col gap-4">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -145,7 +163,12 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
           )}
         </div>
         <div className="mt-auto pt-4">
-          <RefillPredictor medication={medication} />
+           {medication.active !== false && <RefillPredictor medication={medication} />}
+           {medication.active === false && (
+            <Button onClick={handleToggleActive} className="w-full" variant="outline">
+              <Eye className="mr-2" /> Re-enable Medication
+            </Button>
+           )}
         </div>
       </CardContent>
     </Card>

@@ -6,7 +6,7 @@ import type { Medication } from '@/lib/types';
 import { MedicationCard } from '@/components/medication-card';
 import { Alerts } from '@/components/alerts';
 import { Button } from '@/components/ui/button';
-import { Pill, Plus } from 'lucide-react';
+import { Pill, Plus, Eye, EyeOff } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -19,11 +19,12 @@ import { MedicationForm } from '@/components/medication-form';
 export default function Home() {
   const [medicines, setMedicines] = useState<Medication[]>(initialMedicines);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [showDisabled, setShowDisabled] = useState(false);
 
   const handleAddMedication = (newMedication: Medication) => {
     setMedicines((prev) => [
       ...prev,
-      { ...newMedication, id: prev.length > 0 ? Math.max(...prev.map((m) => m.id)) + 1 : 1 },
+      { ...newMedication, id: prev.length > 0 ? Math.max(...prev.map((m) => m.id)) + 1 : 1, active: true },
     ]);
     setIsAddOpen(false);
   };
@@ -38,6 +39,8 @@ export default function Home() {
     setMedicines((prev) => prev.filter((med) => med.id !== medicationId));
   };
   
+  const visibleMedicines = showDisabled ? medicines : medicines.filter(m => m.active !== false);
+
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -56,41 +59,54 @@ export default function Home() {
             </p>
           </header>
 
-          <Alerts medications={medicines} />
+          <Alerts medications={medicines.filter(m => m.active !== false)} />
 
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-headline text-2xl font-semibold">
                 My Medications
               </h2>
-              <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="mr-2" />
-                    Add Medication
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Medication</DialogTitle>
-                  </DialogHeader>
-                  <MedicationForm
-                    onSubmit={handleAddMedication}
-                    onClose={() => setIsAddOpen(false)}
+              <div className="flex items-center gap-2">
+                 <Button variant="outline" onClick={() => setShowDisabled(prev => !prev)}>
+                  {showDisabled ? <EyeOff className="mr-2" /> : <Eye className="mr-2" />}
+                  {showDisabled ? 'Hide Disabled' : 'Show Disabled'}
+                </Button>
+                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2" />
+                      Add Medication
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Medication</DialogTitle>
+                    </DialogHeader>
+                    <MedicationForm
+                      onSubmit={handleAddMedication}
+                      onClose={() => setIsAddOpen(false)}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+            {visibleMedicines.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {visibleMedicines.map((medication) => (
+                  <MedicationCard
+                    key={medication.id}
+                    medication={medication}
+                    onUpdate={handleUpdateMedication}
+                    onDelete={handleDeleteMedication}
                   />
-                </DialogContent>
-              </Dialog>
-            </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {medicines.map((medication) => (
-                <MedicationCard
-                  key={medication.id}
-                  medication={medication}
-                  onUpdate={handleUpdateMedication}
-                  onDelete={handleDeleteMedication}
-                />
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                    <p>You have no medications to display.</p>
+                    <p className="text-sm">Try adding a new medication or showing disabled ones.</p>
+                </div>
+            )}
           </section>
         </div>
       </main>
