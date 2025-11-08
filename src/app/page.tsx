@@ -1,9 +1,39 @@
-import { medicines } from '@/lib/data';
+'use client';
+
+import { useState } from 'react';
+import { medicines as initialMedicines } from '@/lib/data';
+import type { Medication } from '@/lib/types';
 import { MedicationCard } from '@/components/medication-card';
 import { Alerts } from '@/components/alerts';
-import { Pill } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Pill, Plus } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { MedicationForm } from '@/components/medication-form';
 
 export default function Home() {
+  const [medicines, setMedicines] = useState<Medication[]>(initialMedicines);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+
+  const handleAddMedication = (newMedication: Medication) => {
+    setMedicines((prev) => [
+      ...prev,
+      { ...newMedication, id: prev.length > 0 ? Math.max(...prev.map((m) => m.id)) + 1 : 1 },
+    ]);
+    setIsAddOpen(false);
+  };
+
+  const handleUpdateMedication = (updatedMedication: Medication) => {
+    setMedicines((prev) =>
+      prev.map((med) => (med.id === updatedMedication.id ? updatedMedication : med))
+    );
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <main className="flex-1">
@@ -24,12 +54,35 @@ export default function Home() {
           <Alerts medications={medicines} />
 
           <section>
-            <h2 className="font-headline mb-4 text-2xl font-semibold">
-              My Medications
-            </h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-headline text-2xl font-semibold">
+                My Medications
+              </h2>
+              <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2" />
+                    Add Medication
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add New Medication</DialogTitle>
+                  </DialogHeader>
+                  <MedicationForm
+                    onSubmit={handleAddMedication}
+                    onClose={() => setIsAddOpen(false)}
+                  />
+                </DialogContent>
+              </Dialog>
+            </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {medicines.map((medication) => (
-                <MedicationCard key={medication.id} medication={medication} />
+                <MedicationCard
+                  key={medication.id}
+                  medication={medication}
+                  onUpdate={handleUpdateMedication}
+                />
               ))}
             </div>
           </section>

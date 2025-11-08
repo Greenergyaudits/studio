@@ -3,4 +3,5 @@ export type Medication = {
   name: string;
   quantity: number;
   dose_times: string[];
+  expiryDate?: string;
 };
