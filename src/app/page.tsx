@@ -34,6 +34,11 @@ export default function Home() {
     );
   };
 
+  const handleDeleteMedication = (medicationId: number) => {
+    setMedicines((prev) => prev.filter((med) => med.id !== medicationId));
+  };
+  
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <main className="flex-1">
@@ -82,6 +87,7 @@ export default function Home() {
                   key={medication.id}
                   medication={medication}
                   onUpdate={handleUpdateMedication}
+                  onDelete={handleDeleteMedication}
                 />
               ))}
             </div>
