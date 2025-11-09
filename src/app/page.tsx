@@ -6,7 +6,7 @@ import type { Medication } from '@/lib/types';
 import { MedicationCard } from '@/components/medication-card';
 import { Alerts } from '@/components/alerts';
 import { Button } from '@/components/ui/button';
-import { Pill, Plus, Eye, EyeOff } from 'lucide-react';
+import { Pill, Plus, Eye, EyeOff, Users } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -60,7 +60,7 @@ export default function Home() {
             </p>
           </header>
 
-          <EmergencyContact />
+          
           <Alerts medications={medicines.filter(m => m.active !== false)} />
 
           <section>
@@ -73,6 +73,7 @@ export default function Home() {
                   {showDisabled ? <EyeOff className="mr-2" /> : <Eye className="mr-2" />}
                   {showDisabled ? 'Hide Disabled' : 'Show Disabled'}
                 </Button>
+                <EmergencyContact />
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                   <DialogTrigger asChild>
                     <Button>
