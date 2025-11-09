@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/sheet';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { differenceInDays, addDays } from 'date-fns';
 
 
 export default function Home() {
@@ -54,10 +55,14 @@ export default function Home() {
   }, []);
 
 
-  const handleAddMedication = (newMedication: Medication) => {
+  const handleAddMedication = (newMedicationData: Partial<Medication>) => {
     setMedicines((prev) => [
       ...prev,
-      { ...newMedication, id: prev.length > 0 ? Math.max(...prev.map((m) => m.id)) + 1 : 1, active: true },
+      {
+        ...newMedicationData,
+        id: prev.length > 0 ? Math.max(...prev.map((m) => m.id)) + 1 : 1,
+        active: true,
+      } as Medication,
     ]);
     setIsAddOpen(false);
     setIsMobileMenuOpen(false);
@@ -73,7 +78,35 @@ export default function Home() {
     setMedicines((prev) => prev.filter((med) => med.id !== medicationId));
   };
   
-  const visibleMedicines = showDisabled ? medicines : medicines.filter(m => m.active !== false);
+  const isMedicationVisible = (med: Medication) => {
+    if (showDisabled) return true;
+    if (med.active === false) return false;
+    
+    if (med.course) {
+      const startDate = new Date(med.course.startDate);
+      const endDate = addDays(startDate, med.course.durationDays);
+      const remaining = differenceInDays(endDate, new Date());
+      if (remaining < 0) return false;
+    }
+    
+    return true;
+  }
+  
+  const visibleMedicines = medicines.filter(isMedicationVisible);
+
+  const getActiveMedications = () => {
+    return medicines.filter(m => {
+        if (m.active === false) return false;
+        if (m.course) {
+            const startDate = new Date(m.course.startDate);
+            const endDate = addDays(startDate, m.course.durationDays);
+            return differenceInDays(endDate, new Date()) >= 0;
+        }
+        return true;
+    });
+  }
+
+  const activeMedications = getActiveMedications();
 
   const sidebarContent = (
     <div className="flex flex-col gap-4">
@@ -99,12 +132,12 @@ export default function Home() {
 
       <Button variant="outline" onClick={() => setShowDisabled(prev => !prev)}>
         {showDisabled ? <EyeOff className="mr-2" /> : <Eye className="mr-2" />}
-        {showDisabled ? 'Hide Disabled' : 'Show Disabled'}
+        {showDisabled ? 'Hide Inactive' : 'Show Inactive'}
       </Button>
     </div>
   );
 
-  const lowStockMedicines = medicines.filter(m => m.active !== false && m.quantity < 5);
+  const lowStockMedicines = activeMedications.filter(m => m.quantity < 5);
 
   const handleNotifyAllLowStock = () => {
     if (!emergencyContact) {
@@ -225,7 +258,7 @@ export default function Home() {
             </Card>
           )}
 
-          <Alerts medications={medicines.filter(m => m.active !== false)} />
+          <Alerts medications={activeMedications} />
 
           <section>
             <div className="mb-4 flex items-center justify-between">
@@ -247,7 +280,7 @@ export default function Home() {
             ) : (
                 <div className="text-center py-12 text-muted-foreground">
                     <p>You have no medications to display.</p>
-                    <p className="text-sm">Try adding a new medication or showing disabled ones.</p>
+                    <p className="text-sm">Try adding a new medication or showing inactive ones.</p>
                 </div>
             )}
           </section>
@@ -257,3 +290,4 @@ export default function Home() {
   );
 
     
+}

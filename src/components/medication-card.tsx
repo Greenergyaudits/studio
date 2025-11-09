@@ -1,6 +1,6 @@
 import type { Medication } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Package, Pill, Calendar, Edit, Trash2, Eye, EyeOff, ClipboardList } from 'lucide-react';
+import { Clock, Package, Pill, Calendar, Edit, Trash2, Eye, EyeOff, ClipboardList, Timer } from 'lucide-react';
 import { RefillPredictor } from './refill-predictor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ import {
 import { MedicationForm } from './medication-form';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { differenceInDays, addDays } from 'date-fns';
 
 type MedicationCardProps = {
   medication: Medication;
@@ -35,8 +36,8 @@ type MedicationCardProps = {
 export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const handleFormSubmit = (updatedMedication: Medication) => {
-    onUpdate({ ...updatedMedication, active: medication.active });
+  const handleFormSubmit = (updatedFields: Partial<Medication>) => {
+    onUpdate({ ...medication, ...updatedFields });
     setIsEditDialogOpen(false);
   };
 
@@ -51,11 +52,23 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
   const handleToggleActive = () => {
     onUpdate({ ...medication, active: !(medication.active ?? true) });
   };
+  
+  const getCourseRemainingDays = () => {
+    if (!medication.course) return null;
+    const startDate = new Date(medication.course.startDate);
+    const endDate = addDays(startDate, medication.course.durationDays);
+    const remaining = differenceInDays(endDate, new Date());
+    return remaining >= 0 ? remaining : 0;
+  }
+  
+  const remainingDays = getCourseRemainingDays();
+  const isCourseCompleted = remainingDays !== null && remainingDays <= 0;
+
 
   return (
     <Card className={cn(
       "flex flex-col transition-all hover:shadow-md",
-      medication.active === false && "bg-muted/50 opacity-70"
+      (medication.active === false || isCourseCompleted) && "bg-muted/50 opacity-70"
     )}>
       <CardHeader>
         <div className="flex items-start justify-between">
@@ -130,9 +143,10 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
             )}
           </div>
         </div>
-        {medication.active === false && (
+        {(medication.active === false || isCourseCompleted) && (
           <Badge variant="secondary" className="w-fit">
-            <EyeOff className="mr-2" /> Disabled
+            <EyeOff className="mr-2" /> 
+            {isCourseCompleted ? "Course Completed" : "Disabled"}
           </Badge>
         )}
       </CardHeader>
@@ -145,6 +159,14 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             <Calendar className="h-5 w-5" />
             <span>Expires: {medication.expiryDate}</span>
+          </div>
+        )}
+        {remainingDays !== null && (
+           <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Timer className="h-5 w-5" />
+            <span>
+              {remainingDays > 0 ? `${remainingDays} day${remainingDays > 1 ? 's' : ''} left in course` : "Course complete"}
+            </span>
           </div>
         )}
         <div className="flex items-start gap-3 text-sm text-muted-foreground">
@@ -169,9 +191,9 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
           </div>
         )}
         <div className="mt-auto pt-4">
-           {medication.active !== false && <RefillPredictor medication={medication} />}
-           {medication.active === false && (
-            <Button onClick={handleToggleActive} className="w-full" variant="outline">
+           {medication.active !== false && !isCourseCompleted && <RefillPredictor medication={medication} />}
+           {(medication.active === false || isCourseCompleted) && (
+            <Button onClick={handleToggleActive} className="w-full" variant="outline" disabled={isCourseCompleted}>
               <Eye className="mr-2" /> Re-enable Medication
             </Button>
            )}

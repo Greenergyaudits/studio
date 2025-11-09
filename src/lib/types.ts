@@ -6,4 +6,8 @@ export type Medication = {
   expiryDate?: string;
   active?: boolean;
   instructions?: string;
+  course?: {
+    durationDays: number;
+    startDate: string; // ISO 8601 date string
+  };
 };

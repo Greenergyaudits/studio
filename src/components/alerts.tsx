@@ -46,8 +46,7 @@ export function Alerts({ medications }: AlertsProps) {
     };
   }, []);
 
-  const activeMedications = medications.filter((m) => m.active !== false);
-  const doseTimeAlerts = activeMedications.filter((m) => currentTime && m.dose_times.includes(currentTime));
+  const doseTimeAlerts = medications.filter((m) => currentTime && m.dose_times.includes(currentTime));
 
   useEffect(() => {
     if (doseTimeAlerts.length > 0 && audioRef.current) {
@@ -76,7 +75,7 @@ export function Alerts({ medications }: AlertsProps) {
     window.open(whatsappUrl, '_blank');
   };
 
-  const lowStockAlerts = activeMedications.filter((m) => m.quantity < 5);
+  const lowStockAlerts = medications.filter((m) => m.quantity < 5);
 
   if (lowStockAlerts.length === 0 && doseTimeAlerts.length === 0) {
     return (

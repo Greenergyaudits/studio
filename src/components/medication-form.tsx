@@ -32,11 +32,12 @@ const formSchema = z.object({
   ).min(0),
   active: z.boolean().default(true),
   instructions: z.string().optional(),
+  courseDuration: z.coerce.number().min(0).optional(),
 });
 
 type MedicationFormProps = {
   medication?: Medication;
-  onSubmit: (data: Medication) => void;
+  onSubmit: (data: Partial<Medication>) => void;
   onClose: () => void;
 };
 
@@ -50,6 +51,7 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
       dose_times: medication?.dose_times && medication.dose_times.length > 0 ? medication.dose_times : ['09:00'],
       active: medication?.active ?? true,
       instructions: medication?.instructions || '',
+      courseDuration: medication?.course?.durationDays || undefined,
     },
   });
 
@@ -59,11 +61,27 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
   });
 
   function handleFormSubmit(values: z.infer<typeof formSchema>) {
-    onSubmit({
+    const output: Partial<Medication> = {
       ...values,
       id: medication?.id || 0,
       dose_times: values.active ? values.dose_times : []
-    });
+    };
+
+    if (values.courseDuration && values.courseDuration > 0) {
+      output.course = {
+        durationDays: values.courseDuration,
+        // If editing, preserve the original start date, otherwise set a new one.
+        startDate: medication?.course?.startDate || new Date().toISOString(),
+      };
+    } else {
+      // Ensure course is removed if duration is cleared
+      output.course = undefined;
+    }
+    
+    // remove the temporary form-only field
+    delete (output as any).courseDuration; 
+
+    onSubmit(output);
   }
 
   const isActive = form.watch('active');
@@ -105,6 +123,20 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
               <FormLabel>Expiry Date (Optional)</FormLabel>
               <FormControl>
                 <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="courseDuration"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Course Duration (days, optional)</FormLabel>
+              <FormControl>
+                <Input type="number" placeholder="e.g. 7" {...field} onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
               </FormControl>
               <FormMessage />
             </FormItem>
