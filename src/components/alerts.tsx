@@ -55,7 +55,7 @@ export function Alerts({ medications }: AlertsProps) {
         </Alert>
       ))}
       {lowStockAlerts.map(med => (
-        <Alert key={`stock-${med.id}`} variant="destructive">
+        <Alert key={`stock-${med.id}`} variant="destructive" className="animate-pulse">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Low Stock Warning</AlertTitle>
           <AlertDescription>
