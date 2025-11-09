@@ -190,7 +190,8 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
                     <Input 
                         type="number" 
                         placeholder="e.g. 7" 
-                        {...field} 
+                        {...field}
+                        value={field.value ?? ''}
                         onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.value)}
                         disabled={watchIsOngoing}
                     />
