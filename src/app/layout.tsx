@@ -22,9 +22,12 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="font-body antialiased">
-        {children}
+      <body className="font-body antialiased flex flex-col min-h-screen">
+        <div className="flex-grow">{children}</div>
         <Toaster />
+        <footer className="py-4 px-6 text-center text-sm text-muted-foreground bg-background border-t">
+          <p>&copy; {new Date().getFullYear()} Greenergy Innovations (smc) Pvt. Ltd. All rights reserved.</p>
+        </footer>
       </body>
     </html>
   );
