@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Medication } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, Bell, Info } from 'lucide-react';
+import { AlertTriangle, Bell, Info, MessageSquare } from 'lucide-react';
+import { Button } from './ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 type AlertsProps = {
   medications: Medication[];
@@ -11,9 +13,17 @@ type AlertsProps = {
 
 export function Alerts({ medications }: AlertsProps) {
   const [currentTime, setCurrentTime] = useState<string | null>(null);
+  const [emergencyContact, setEmergencyContact] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
+    // Client-side only
+    const storedContact = localStorage.getItem('emergencyContact');
+    if (storedContact) {
+      setEmergencyContact(storedContact);
+    }
+    
     const updateCurrentTime = () => {
       // Format to HH:MM using en-GB which provides 24-hour format
       setCurrentTime(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
@@ -22,7 +32,16 @@ export function Alerts({ medications }: AlertsProps) {
     updateCurrentTime(); // Set time immediately on mount
     const intervalId = setInterval(updateCurrentTime, 1000 * 30); // Check every 30 seconds
 
-    return () => clearInterval(intervalId); // Cleanup on unmount
+    // Listen for storage changes to update contact
+    const handleStorageChange = () => {
+        setEmergencyContact(localStorage.getItem('emergencyContact'));
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+        clearInterval(intervalId); // Cleanup on unmount
+        window.removeEventListener('storage', handleStorageChange);
+    }
   }, []);
   
   const activeMedications = medications.filter(m => m.active !== false);
@@ -41,6 +60,20 @@ export function Alerts({ medications }: AlertsProps) {
   if (currentTime === null) {
     return null;
   }
+
+  const handleWhatsAppNotify = (med: Medication) => {
+    if (!emergencyContact) {
+        toast({
+            variant: "destructive",
+            title: "No Emergency Contact",
+            description: "Please set an emergency contact number first.",
+        });
+        return;
+    }
+    const message = encodeURIComponent(`Hi, this is a reminder that I am running low on my medication: ${med.name}. There are only ${med.quantity} doses left.`);
+    const whatsappUrl = `https://wa.me/${emergencyContact}?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+  };
 
   const lowStockAlerts = activeMedications.filter(m => m.quantity < 5);
   
@@ -68,11 +101,22 @@ export function Alerts({ medications }: AlertsProps) {
       ))}
       {lowStockAlerts.map(med => (
         <Alert key={`stock-${med.id}`} variant="destructive" className="animate-pulse">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Low Stock Warning</AlertTitle>
-          <AlertDescription>
-            You are running low on {med.name}. Only {med.quantity} dose{med.quantity > 1 ? 's' : ''} left.
-          </AlertDescription>
+            <div className='flex flex-col gap-2'>
+                <div>
+                    <div className='flex items-center gap-2'>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Low Stock Warning</AlertTitle>
+                    </div>
+                    <AlertDescription>
+                        You are running low on {med.name}. Only {med.quantity} dose{med.quantity > 1 ? 's' : ''} left.
+                    </AlertDescription>
+                </div>
+                {emergencyContact && (
+                    <Button size="sm" onClick={() => handleWhatsAppNotify(med)} className="bg-white/20 hover:bg-white/30 text-white w-full sm:w-auto">
+                        <MessageSquare className="mr-2"/> Notify via WhatsApp
+                    </Button>
+                )}
+            </div>
         </Alert>
       ))}
     </div>

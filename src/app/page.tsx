@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { MedicationForm } from '@/components/medication-form';
+import { EmergencyContact } from '@/components/emergency-contact';
 
 export default function Home() {
   const [medicines, setMedicines] = useState<Medication[]>(initialMedicines);
@@ -59,6 +60,7 @@ export default function Home() {
             </p>
           </header>
 
+          <EmergencyContact />
           <Alerts medications={medicines.filter(m => m.active !== false)} />
 
           <section>
