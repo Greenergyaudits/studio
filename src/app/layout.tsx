@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Medication Minder',
+  title: 'MEDIC REMINDER',
   description: 'Your personal assistant for staying on top of your medication schedule and supplies.',
 };
 

@@ -50,8 +50,8 @@ export default function Home() {
             <div className="inline-block rounded-full bg-primary/20 p-4 text-primary">
               <Pill className="h-8 w-8" />
             </div>
-            <h1 className="font-headline text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-              Medication Minder
+            <h1 className="font-headline text-5xl font-bold tracking-tighter text-foreground sm:text-6xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+              MEDIC REMINDER
             </h1>
             <p className="max-w-2xl text-lg text-muted-foreground">
               Your personal assistant for staying on top of your medication
