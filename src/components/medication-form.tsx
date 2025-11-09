@@ -4,11 +4,13 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Medication } from '@/lib/types';
+import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -18,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -33,6 +36,7 @@ const formSchema = z.object({
   active: z.boolean().default(true),
   instructions: z.string().optional(),
   courseDuration: z.coerce.number().min(0).optional(),
+  isOngoing: z.boolean().default(true),
 });
 
 type MedicationFormProps = {
@@ -52,6 +56,7 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
       active: medication?.active ?? true,
       instructions: medication?.instructions || '',
       courseDuration: medication?.course?.durationDays || undefined,
+      isOngoing: !medication?.course,
     },
   });
 
@@ -60,6 +65,16 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
     name: 'dose_times',
   });
 
+  const watchCourseDuration = form.watch('courseDuration');
+  const watchIsOngoing = form.watch('isOngoing');
+
+  useEffect(() => {
+    if (watchIsOngoing) {
+        form.setValue('courseDuration', undefined);
+    }
+  }, [watchIsOngoing, form]);
+
+
   function handleFormSubmit(values: z.infer<typeof formSchema>) {
     const output: Partial<Medication> = {
       ...values,
@@ -67,19 +82,20 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
       dose_times: values.active ? values.dose_times : []
     };
 
-    if (values.courseDuration && values.courseDuration > 0) {
+    if (!values.isOngoing && values.courseDuration && values.courseDuration > 0) {
       output.course = {
         durationDays: values.courseDuration,
         // If editing, preserve the original start date, otherwise set a new one.
         startDate: medication?.course?.startDate || new Date().toISOString(),
       };
     } else {
-      // Ensure course is removed if duration is cleared
+      // Ensure course is removed if it's ongoing
       output.course = undefined;
     }
     
-    // remove the temporary form-only field
+    // remove the temporary form-only fields
     delete (output as any).courseDuration; 
+    delete (output as any).isOngoing; 
 
     onSubmit(output);
   }
@@ -129,19 +145,61 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="courseDuration"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Course Duration (days, optional)</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="e.g. 7" {...field} onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.value)} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="space-y-4 rounded-lg border p-4">
+             <h3 className="text-sm font-medium">Medication Course</h3>
+            <FormField
+                control={form.control}
+                name="isOngoing"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                    <FormControl>
+                        <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            disabled={!!watchCourseDuration && watchCourseDuration > 0}
+                        />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                        <FormLabel>
+                        Ongoing Medication (No End Date)
+                        </FormLabel>
+                        <FormDescription>
+                           Select this for medications taken indefinitely.
+                        </FormDescription>
+                    </div>
+                    </FormItem>
+                )}
+            />
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                    Or
+                    </span>
+                </div>
+            </div>
+            <FormField
+            control={form.control}
+            name="courseDuration"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Fixed Course Duration (in days)</FormLabel>
+                <FormControl>
+                    <Input 
+                        type="number" 
+                        placeholder="e.g. 7" 
+                        {...field} 
+                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.value)}
+                        disabled={watchIsOngoing}
+                    />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
         
         <FormField
           control={form.control}
