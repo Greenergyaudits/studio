@@ -7,6 +7,7 @@ import type { Medication } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle, CheckCircle, Loader2, Sparkles } from 'lucide-react';
+import React, { useEffect } from 'react';
 
 type RefillPredictorProps = {
   medication: Medication;
@@ -35,6 +36,11 @@ export function RefillPredictor({ medication }: RefillPredictorProps) {
     }
     setIsLoading(false);
   };
+  
+  useEffect(() => {
+    handlePredict();
+  }, [medication.id]);
+
 
   const handleRefillRequest = () => {
     // In a real app, this would trigger an API call to a pharmacy
@@ -48,13 +54,6 @@ export function RefillPredictor({ medication }: RefillPredictorProps) {
 
   return (
     <div className="space-y-4">
-      {!prediction && !isLoading && !error && (
-        <Button onClick={handlePredict} className="w-full" variant="outline">
-          <Sparkles className="mr-2 h-4 w-4" />
-          Check Refill Status with AI
-        </Button>
-      )}
-
       {isLoading && (
         <Button disabled className="w-full">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
