@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Phone, Edit, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from './ui/skeleton';
 
 const phoneRegex = new RegExp(
   /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
@@ -22,29 +23,31 @@ const formSchema = z.object({
 export function EmergencyContact() {
   const [contact, setContact] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Ensure this runs only on the client
+    setIsClient(true);
     const storedContact = localStorage.getItem('emergencyContact');
     if (storedContact) {
       setContact(storedContact);
     } else {
-      setIsEditing(true); // Default to editing if no contact is set
+      setIsEditing(true);
     }
   }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      phone: contact || '',
+      phone: '',
     },
   });
 
   useEffect(() => {
-    // Reset form when contact changes
-    form.reset({ phone: contact || '' });
-  }, [contact, form]);
+    if (isClient) {
+      form.reset({ phone: contact || '' });
+    }
+  }, [contact, form, isClient]);
 
   const handleSaveContact = (values: z.infer<typeof formSchema>) => {
     localStorage.setItem('emergencyContact', values.phone);
@@ -54,14 +57,9 @@ export function EmergencyContact() {
       title: 'Contact Saved',
       description: 'Emergency contact has been updated.',
     });
-    // Manually trigger a storage event to notify other components like Alerts
     window.dispatchEvent(new Event('storage'));
   };
-
-  if (typeof window === 'undefined') {
-    return null; // Don't render on the server
-  }
-
+  
   return (
     <Card>
       <CardHeader>
@@ -71,7 +69,12 @@ export function EmergencyContact() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {isEditing ? (
+        {!isClient ? (
+          <div className="flex items-center justify-between">
+             <Skeleton className="h-8 w-48" />
+             <Skeleton className="h-10 w-10" />
+          </div>
+        ) : isEditing ? (
           <form onSubmit={form.handleSubmit(handleSaveContact)} className="flex items-center gap-2">
             <div className="relative flex-grow">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
