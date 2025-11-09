@@ -6,7 +6,7 @@ import type { Medication } from '@/lib/types';
 import { MedicationCard } from '@/components/medication-card';
 import { Alerts } from '@/components/alerts';
 import { Button } from '@/components/ui/button';
-import { Pill, Plus, Eye, EyeOff, Users, Menu, Phone, User } from 'lucide-react';
+import { Pill, Plus, Eye, EyeOff, Users, Menu, Phone, User, MessageSquare } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function Home() {
@@ -32,6 +33,7 @@ export default function Home() {
   const [showDisabled, setShowDisabled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [emergencyContact, setEmergencyContact] = useState<EmergencyContactDetails | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const getContact = () => {
@@ -71,6 +73,22 @@ export default function Home() {
     setMedicines((prev) => prev.filter((med) => med.id !== medicationId));
   };
   
+  const handleGenericWhatsAppNotify = () => {
+    if (!emergencyContact) {
+      toast({
+        variant: 'destructive',
+        title: 'No Emergency Contact',
+        description: 'Please set an emergency contact first.',
+      });
+      return;
+    }
+    const message = encodeURIComponent(
+      `Hi ${emergencyContact.name}, this is a message from the Medic Reminder App.`
+    );
+    const whatsappUrl = `https://wa.me/${emergencyContact.phone}?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const visibleMedicines = showDisabled ? medicines : medicines.filter(m => m.active !== false);
 
   const sidebarContent = (
@@ -182,6 +200,12 @@ export default function Home() {
                     <span>{emergencyContact.phone}</span>
                  </div>
               </CardContent>
+               <CardFooter>
+                <Button size="sm" onClick={handleGenericWhatsAppNotify} className="w-full">
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Send Message
+                </Button>
+              </CardFooter>
             </Card>
           )}
 
