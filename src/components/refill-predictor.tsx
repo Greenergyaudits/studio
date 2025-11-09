@@ -30,7 +30,6 @@ export function RefillPredictor({ medication }: RefillPredictorProps) {
       setPrediction(result.data);
     } else {
       // Don't show an error, just log it for debugging.
-      console.error(result.error);
     }
     setIsLoading(false);
   };
