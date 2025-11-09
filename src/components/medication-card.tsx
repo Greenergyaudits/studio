@@ -1,6 +1,6 @@
 import type { Medication } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, Package, Pill, Calendar, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Clock, Package, Pill, Calendar, Edit, Trash2, Eye, EyeOff, ClipboardList } from 'lucide-react';
 import { RefillPredictor } from './refill-predictor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -162,6 +162,12 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
              <span className="text-sm text-muted-foreground italic">No dose times set.</span>
           )}
         </div>
+        {medication.instructions && (
+          <div className="flex items-start gap-3 text-sm text-muted-foreground">
+            <ClipboardList className="mt-0.5 h-5 w-5 shrink-0" />
+            <span>{medication.instructions}</span>
+          </div>
+        )}
         <div className="mt-auto pt-4">
            {medication.active !== false && <RefillPredictor medication={medication} />}
            {medication.active === false && (

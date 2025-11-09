@@ -17,6 +17,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -30,6 +31,7 @@ const formSchema = z.object({
     z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)')
   ).min(0),
   active: z.boolean().default(true),
+  instructions: z.string().optional(),
 });
 
 type MedicationFormProps = {
@@ -47,6 +49,7 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
       expiryDate: medication?.expiryDate || '',
       dose_times: medication?.dose_times && medication.dose_times.length > 0 ? medication.dose_times : ['09:00'],
       active: medication?.active ?? true,
+      instructions: medication?.instructions || '',
     },
   });
 
@@ -122,6 +125,20 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
                   onCheckedChange={field.onChange}
                 />
               </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="instructions"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Dosage Instructions (Optional)</FormLabel>
+              <FormControl>
+                <Textarea placeholder="e.g. After Meal, Before Breakfast" {...field} />
+              </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />

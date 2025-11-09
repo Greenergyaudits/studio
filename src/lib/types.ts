@@ -5,4 +5,5 @@ export type Medication = {
   dose_times: string[];
   expiryDate?: string;
   active?: boolean;
+  instructions?: string;
 };
