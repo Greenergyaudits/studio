@@ -6,7 +6,7 @@ import type { Medication } from '@/lib/types';
 import { MedicationCard } from '@/components/medication-card';
 import { Alerts } from '@/components/alerts';
 import { Button } from '@/components/ui/button';
-import { Pill, Plus, Eye, EyeOff, Users } from 'lucide-react';
+import { Pill, Plus, Eye, EyeOff, Users, Menu } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,11 +16,19 @@ import {
 } from '@/components/ui/dialog';
 import { MedicationForm } from '@/components/medication-form';
 import { EmergencyContact } from '@/components/emergency-contact';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 export default function Home() {
   const [medicines, setMedicines] = useState<Medication[]>(initialMedicines);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [showDisabled, setShowDisabled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleAddMedication = (newMedication: Medication) => {
     setMedicines((prev) => [
@@ -28,6 +36,7 @@ export default function Home() {
       { ...newMedication, id: prev.length > 0 ? Math.max(...prev.map((m) => m.id)) + 1 : 1, active: true },
     ]);
     setIsAddOpen(false);
+    setIsMobileMenuOpen(false);
   };
 
   const handleUpdateMedication = (updatedMedication: Medication) => {
@@ -42,15 +51,88 @@ export default function Home() {
   
   const visibleMedicines = showDisabled ? medicines : medicines.filter(m => m.active !== false);
 
+  const sidebarContent = (
+    <div className="flex flex-col gap-4">
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="mr-2" />
+            Add Medication
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Medication</DialogTitle>
+          </DialogHeader>
+          <MedicationForm
+            onSubmit={handleAddMedication}
+            onClose={() => setIsAddOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <EmergencyContact />
+
+      <Button variant="outline" onClick={() => setShowDisabled(prev => !prev)}>
+        {showDisabled ? <EyeOff className="mr-2" /> : <Eye className="mr-2" />}
+        {showDisabled ? 'Hide Disabled' : 'Show Disabled'}
+      </Button>
+    </div>
+  );
+
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      <main className="flex-1">
-        <div className="container mx-auto grid gap-8 px-4 py-8 md:px-6">
-          <header className="flex flex-col items-center gap-4 text-center">
-            <div className="inline-block rounded-full bg-primary/20 p-4 text-primary">
-              <Pill className="h-8 w-8" />
-            </div>
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <aside className="hidden border-r bg-muted/40 md:block">
+        <div className="flex h-full max-h-screen flex-col gap-2">
+          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+            <a href="/" className="flex items-center gap-2 font-semibold">
+              <Pill className="h-6 w-6 text-primary" />
+              <span className="">MEDIC REMINDER</span>
+            </a>
+          </div>
+          <div className="flex-1">
+            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+              {sidebarContent}
+            </nav>
+          </div>
+        </div>
+      </aside>
+      <div className="flex flex-col">
+        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6 md:hidden">
+           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 md:hidden"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex flex-col">
+              <SheetHeader>
+                 <SheetTitle>
+                    <a href="/" className="flex items-center gap-2 font-semibold">
+                        <Pill className="h-6 w-6 text-primary" />
+                        <span className="">MEDIC REMINDER</span>
+                    </a>
+                 </SheetTitle>
+              </SheetHeader>
+              <nav className="grid gap-2 text-lg font-medium">
+                {sidebarContent}
+              </nav>
+            </SheetContent>
+          </Sheet>
+           <div className="w-full flex-1">
+             <h1 className="font-headline text-2xl font-bold tracking-tighter text-foreground sm:text-3xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent text-center">
+              MEDIC REMINDER
+            </h1>
+           </div>
+        </header>
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+           <header className="hidden md:flex flex-col items-center gap-2 text-center">
             <h1 className="font-headline text-5xl font-bold tracking-tighter text-foreground sm:text-6xl bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
               MEDIC REMINDER
             </h1>
@@ -59,7 +141,6 @@ export default function Home() {
               schedule and supplies.
             </p>
           </header>
-
           
           <Alerts medications={medicines.filter(m => m.active !== false)} />
 
@@ -68,33 +149,9 @@ export default function Home() {
               <h2 className="font-headline text-2xl font-semibold">
                 My Medications
               </h2>
-              <div className="flex items-center gap-2">
-                 <Button variant="outline" onClick={() => setShowDisabled(prev => !prev)}>
-                  {showDisabled ? <EyeOff className="mr-2" /> : <Eye className="mr-2" />}
-                  {showDisabled ? 'Hide Disabled' : 'Show Disabled'}
-                </Button>
-                <EmergencyContact />
-                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="mr-2" />
-                      Add Medication
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Add New Medication</DialogTitle>
-                    </DialogHeader>
-                    <MedicationForm
-                      onSubmit={handleAddMedication}
-                      onClose={() => setIsAddOpen(false)}
-                    />
-                  </DialogContent>
-                </Dialog>
-              </div>
             </div>
             {visibleMedicines.length > 0 ? (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                 {visibleMedicines.map((medication) => (
                   <MedicationCard
                     key={medication.id}
@@ -111,8 +168,8 @@ export default function Home() {
                 </div>
             )}
           </section>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
