@@ -6,7 +6,7 @@ import { getRefillPrediction } from '@/app/actions';
 import type { Medication } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle, CheckCircle, Loader2, Sparkles } from 'lucide-react';
+import { CheckCircle, Loader2, Sparkles } from 'lucide-react';
 import React, { useEffect } from 'react';
 
 type RefillPredictorProps = {
@@ -20,26 +20,24 @@ type Prediction = {
 
 export function RefillPredictor({ medication }: RefillPredictorProps) {
   const [prediction, setPrediction] = useState<Prediction | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handlePredict = async () => {
     setIsLoading(true);
-    setError(null);
-    setPrediction(null);
     const result = await getRefillPrediction(medication);
     if (result.success) {
       setPrediction(result.data);
     } else {
-      setError(result.error);
+      // Don't show an error, just log it for debugging.
+      console.error(result.error);
     }
     setIsLoading(false);
   };
   
   useEffect(() => {
     handlePredict();
-  }, [medication.id]);
+  }, [medication.id, medication.quantity, medication.dose_times]);
 
 
   const handleRefillRequest = () => {
@@ -59,18 +57,6 @@ export function RefillPredictor({ medication }: RefillPredictorProps) {
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           AI is analyzing...
         </Button>
-      )}
-
-      {error && (
-        <Card className="border-destructive bg-destructive/10">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3 text-destructive">
-                <AlertCircle className="h-5 w-5 shrink-0" />
-                <p className="text-sm font-medium">{error}</p>
-            </div>
-            <Button onClick={handlePredict} variant="destructive" size="sm" className="mt-3">Try Again</Button>
-          </CardContent>
-        </Card>
       )}
 
       {prediction && (
