@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Medication } from '@/lib/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, Bell, Info } from 'lucide-react';
@@ -11,6 +11,7 @@ type AlertsProps = {
 
 export function Alerts({ medications }: AlertsProps) {
   const [currentTime, setCurrentTime] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const updateCurrentTime = () => {
@@ -23,16 +24,26 @@ export function Alerts({ medications }: AlertsProps) {
 
     return () => clearInterval(intervalId); // Cleanup on unmount
   }, []);
+  
+  const activeMedications = medications.filter(m => m.active !== false);
+  const doseTimeAlerts = activeMedications.filter(m => currentTime && m.dose_times.includes(currentTime));
+
+  useEffect(() => {
+    if (doseTimeAlerts.length > 0 && audioRef.current) {
+        // Since the component might re-render, we'll try to play, but catch errors
+        // if the browser blocks it. User interaction is usually needed to enable audio.
+        audioRef.current.play().catch(error => console.log("Audio play was prevented.", error));
+    }
+  }, [doseTimeAlerts, currentTime]);
+
 
   // Don't render anything until the client has determined the time
   if (currentTime === null) {
     return null;
   }
 
-  const activeMedications = medications.filter(m => m.active !== false);
   const lowStockAlerts = activeMedications.filter(m => m.quantity < 5);
-  const doseTimeAlerts = activeMedications.filter(m => m.dose_times.includes(currentTime));
-
+  
   if (lowStockAlerts.length === 0 && doseTimeAlerts.length === 0) {
     return (
         <Alert className="border-green-300 bg-green-50 dark:border-green-700 dark:bg-green-900/30">
@@ -47,6 +58,7 @@ export function Alerts({ medications }: AlertsProps) {
 
   return (
     <div className="space-y-4">
+       <audio ref={audioRef} src="https://firebasestudio-assets.b-cdn.net/sounds/notification.mp3" preload="auto" />
       {doseTimeAlerts.map(med => (
         <Alert key={`dose-${med.id}`} className="bg-accent/80 border-accent animate-pulse">
           <Bell className="h-4 w-4 text-accent-foreground" />
