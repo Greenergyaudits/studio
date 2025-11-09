@@ -1,6 +1,15 @@
 import type { Metadata } from 'next';
+import { PT_Sans } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { cn } from '@/lib/utils';
+
+const ptSans = PT_Sans({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-pt-sans',
+});
+
 
 export const metadata: Metadata = {
   title: 'MEDIC REMINDER',
@@ -14,15 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="font-body antialiased flex flex-col min-h-screen">
+      <body className={cn("font-body antialiased flex flex-col min-h-screen", ptSans.variable)}>
         <div className="flex-grow">{children}</div>
         <Toaster />
         <footer className="py-4 px-6 text-center text-sm text-muted-foreground bg-background border-t">
