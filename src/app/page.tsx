@@ -33,6 +33,7 @@ export default function Home() {
   const [showDisabled, setShowDisabled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [emergencyContact, setEmergencyContact] = useState<EmergencyContactDetails | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const getContact = () => {
@@ -103,6 +104,36 @@ export default function Home() {
     </div>
   );
 
+  const lowStockMedicines = medicines.filter(m => m.active !== false && m.quantity < 5);
+
+  const handleNotifyAllLowStock = () => {
+    if (!emergencyContact) {
+      toast({
+        variant: 'destructive',
+        title: 'No Emergency Contact',
+        description: 'Please set an emergency contact name and number first.',
+      });
+      return;
+    }
+
+    if (lowStockMedicines.length === 0) {
+      toast({
+        title: 'No Low Stock Medications',
+        description: 'All your medications are well-stocked.',
+      });
+      return;
+    }
+
+    const lowStockList = lowStockMedicines
+      .map(med => `- ${med.name} (only ${med.quantity} left)`)
+      .join('\n');
+    
+    const message = encodeURIComponent(
+      `Hi ${emergencyContact.name}, this is a reminder about my medications that are running low:\n\n${lowStockList}`
+    );
+    const whatsappUrl = `https://wa.me/${emergencyContact.phone}?text=${message}`;
+    window.open(whatsappUrl, '_blank');
+  };
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -183,6 +214,14 @@ export default function Home() {
                     <span>{emergencyContact.phone}</span>
                  </div>
               </CardContent>
+              <CardFooter>
+                <Button 
+                  onClick={handleNotifyAllLowStock}
+                  disabled={!emergencyContact || lowStockMedicines.length === 0}
+                >
+                  <MessageSquare className="mr-2"/> Notify about Low Stock
+                </Button>
+              </CardFooter>
             </Card>
           )}
 
@@ -216,4 +255,5 @@ export default function Home() {
       </div>
     </div>
   );
-}
+
+    
