@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Medication } from '@/lib/types';
 import { useEffect } from 'react';
+import { format, parseISO } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -36,6 +37,7 @@ const formSchema = z.object({
   active: z.boolean().default(true),
   instructions: z.string().optional(),
   courseDuration: z.coerce.number().min(0).optional(),
+  startDate: z.string().optional(),
   isOngoing: z.boolean().default(true),
 });
 
@@ -56,6 +58,7 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
       active: medication?.active ?? true,
       instructions: medication?.instructions || '',
       courseDuration: medication?.course?.durationDays || undefined,
+      startDate: medication?.course?.startDate ? format(parseISO(medication.course.startDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       isOngoing: !medication?.course,
     },
   });
@@ -65,12 +68,14 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
     name: 'dose_times',
   });
 
-  const watchCourseDuration = form.watch('courseDuration');
   const watchIsOngoing = form.watch('isOngoing');
 
   useEffect(() => {
     if (watchIsOngoing) {
         form.setValue('courseDuration', undefined);
+        form.setValue('startDate', undefined);
+    } else if (form.getValues('startDate') === undefined) {
+        form.setValue('startDate', format(new Date(), 'yyyy-MM-dd'));
     }
   }, [watchIsOngoing, form]);
 
@@ -82,11 +87,10 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
       dose_times: values.active ? values.dose_times : []
     };
 
-    if (!values.isOngoing && values.courseDuration && values.courseDuration > 0) {
+    if (!values.isOngoing && values.courseDuration && values.courseDuration > 0 && values.startDate) {
       output.course = {
         durationDays: values.courseDuration,
-        // If editing, preserve the original start date, otherwise set a new one.
-        startDate: medication?.course?.startDate || new Date().toISOString(),
+        startDate: new Date(values.startDate).toISOString(),
       };
     } else {
       // Ensure course is removed if it's ongoing
@@ -95,7 +99,8 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
     
     // remove the temporary form-only fields
     delete (output as any).courseDuration; 
-    delete (output as any).isOngoing; 
+    delete (output as any).isOngoing;
+    delete (output as any).startDate;
 
     onSubmit(output);
   }
@@ -156,7 +161,6 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
                         <Checkbox
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={!!watchCourseDuration && watchCourseDuration > 0}
                         />
                     </FormControl>
                     <div className="space-y-1 leading-none">
@@ -180,26 +184,48 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
                     </span>
                 </div>
             </div>
-            <FormField
-            control={form.control}
-            name="courseDuration"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Fixed Course Duration (in days)</FormLabel>
-                <FormControl>
-                    <Input 
-                        type="number" 
-                        placeholder="e.g. 7" 
-                        {...field}
-                        value={field.value ?? ''}
-                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.value)}
-                        disabled={watchIsOngoing}
-                    />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="courseDuration"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Duration (days)</FormLabel>
+                    <FormControl>
+                        <Input 
+                            type="number" 
+                            placeholder="e.g. 7" 
+                            {...field}
+                            value={field.value ?? ''}
+                            onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.value)}
+                            disabled={watchIsOngoing}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Start Date</FormLabel>
+                    <FormControl>
+                        <Input 
+                            type="date"
+                            {...field}
+                            value={field.value ?? ''}
+                            onChange={(e) => field.onChange(e.target.value === '' ? undefined : e.target.value)}
+                            disabled={watchIsOngoing}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+              />
+            </div>
         </div>
         
         <FormField
