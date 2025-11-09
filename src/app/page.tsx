@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { medicines as initialMedicines } from '@/lib/data';
 import type { Medication } from '@/lib/types';
 import { MedicationCard } from '@/components/medication-card';
 import { Alerts } from '@/components/alerts';
 import { Button } from '@/components/ui/button';
-import { Pill, Plus, Eye, EyeOff, Users, Menu } from 'lucide-react';
+import { Pill, Plus, Eye, EyeOff, Users, Menu, Phone, User } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { MedicationForm } from '@/components/medication-form';
-import { EmergencyContact } from '@/components/emergency-contact';
+import { EmergencyContact, type EmergencyContactDetails } from '@/components/emergency-contact';
 import {
   Sheet,
   SheetContent,
@@ -23,12 +23,34 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
 
 export default function Home() {
   const [medicines, setMedicines] = useState<Medication[]>(initialMedicines);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [showDisabled, setShowDisabled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [emergencyContact, setEmergencyContact] = useState<EmergencyContactDetails | null>(null);
+
+  useEffect(() => {
+    const getContact = () => {
+      const storedContact = localStorage.getItem('emergencyContact');
+      if (storedContact) {
+        setEmergencyContact(JSON.parse(storedContact));
+      } else {
+        setEmergencyContact(null);
+      }
+    };
+
+    getContact();
+    window.addEventListener('storage', getContact);
+
+    return () => {
+      window.removeEventListener('storage', getContact);
+    };
+  }, []);
+
 
   const handleAddMedication = (newMedication: Medication) => {
     setMedicines((prev) => [
@@ -142,6 +164,27 @@ export default function Home() {
             </p>
           </header>
           
+          {emergencyContact && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3 text-lg">
+                  <Users className="h-5 w-5 text-primary" />
+                  Emergency Contact
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-2 text-sm">
+                 <div className="flex items-center gap-3">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span>{emergencyContact.name}</span>
+                 </div>
+                 <div className="flex items-center gap-3">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span>{emergencyContact.phone}</span>
+                 </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Alerts medications={medicines.filter(m => m.active !== false)} />
 
           <section>
