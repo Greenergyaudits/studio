@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, Loader2, Sparkles } from 'lucide-react';
 import React, { useEffect } from 'react';
+import { WithId } from '@/firebase';
 
 type RefillPredictorProps = {
-  medication: Medication;
+  medication: WithId<Medication>;
 };
 
 type Prediction = {
@@ -25,7 +26,9 @@ export function RefillPredictor({ medication }: RefillPredictorProps) {
 
   const handlePredict = async () => {
     setIsLoading(true);
-    const result = await getRefillPrediction(medication);
+    // The action expects a plain Medication object, not WithId
+    const { id, ...medData } = medication;
+    const result = await getRefillPrediction(medData as Medication);
     if (result.success) {
       setPrediction(result.data);
     } else {

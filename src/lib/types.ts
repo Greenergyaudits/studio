@@ -1,5 +1,5 @@
 export type Medication = {
-  id: number;
+  id: string; // Changed to string for Firestore
   name: string;
   quantity: number;
   dose_times: string[];
@@ -10,4 +10,5 @@ export type Medication = {
     durationDays: number;
     startDate: string; // ISO 8601 date string
   };
+  userId: string;
 };

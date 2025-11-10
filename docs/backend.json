@@ -81,7 +81,7 @@
           "type": "number",
           "description": "Current quantity of the medication."
         },
-        "doseTimes": {
+        "dose_times": {
           "type": "array",
           "description": "Array of dose times for the medication (in HH:MM format).",
           "items": {
@@ -91,21 +91,41 @@
         "userId": {
           "type": "string",
           "description": "Reference to User. (Relationship: User 1:N Medicine)"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "instructions": {
+          "type": "string"
+        },
+        "course": {
+          "type": "object",
+          "properties": {
+            "durationDays": {
+              "type": "number"
+            },
+            "startDate": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "expiryDate": {
+          "type": "string"
         }
       },
       "required": [
         "id",
         "name",
         "quantity",
-        "doseTimes",
+        "dose_times",
         "userId"
       ]
     }
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "google.com"
     ]
   },
   "firestore": {

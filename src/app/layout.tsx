@@ -3,6 +3,8 @@ import { PT_Sans } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
+import { FirebaseClientProvider } from '@/firebase';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
@@ -24,11 +26,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn("font-body antialiased flex flex-col min-h-screen", ptSans.variable)}>
-        <div className="flex-grow">{children}</div>
-        <Toaster />
-        <footer className="py-4 px-6 text-center text-sm text-muted-foreground bg-background border-t">
-          <p>&copy; {new Date().getFullYear()} Greenergy Innovations (smc) Pvt. Ltd. All rights reserved.</p>
-        </footer>
+        <FirebaseClientProvider>
+          <FirebaseErrorListener />
+          <div className="flex-grow">{children}</div>
+          <Toaster />
+          <footer className="py-4 px-6 text-center text-sm text-muted-foreground bg-background border-t">
+            <p>&copy; {new Date().getFullYear()} Greenergy Innovations (smc) Pvt. Ltd. All rights reserved.</p>
+          </footer>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

@@ -26,11 +26,12 @@ import { MedicationForm } from './medication-form';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { differenceInDays, addDays } from 'date-fns';
+import { WithId } from '@/firebase';
 
 type MedicationCardProps = {
-  medication: Medication;
-  onUpdate: (medication: Medication) => void;
-  onDelete: (medicationId: number) => void;
+  medication: WithId<Medication>;
+  onUpdate: (medication: WithId<Medication>) => void;
+  onDelete: (medicationId: string) => void;
 };
 
 export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCardProps) {

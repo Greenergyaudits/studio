@@ -22,6 +22,7 @@ import { PlusCircle, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { WithId } from '@/firebase';
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -42,7 +43,7 @@ const formSchema = z.object({
 });
 
 type MedicationFormProps = {
-  medication?: Medication;
+  medication?: WithId<Medication>;
   onSubmit: (data: Partial<Medication>) => void;
   onClose: () => void;
 };
@@ -57,7 +58,7 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
       dose_times: medication?.dose_times && medication.dose_times.length > 0 ? medication.dose_times : ['09:00'],
       active: medication?.active ?? true,
       instructions: medication?.instructions || '',
-      courseDuration: medication?.course?.durationDays || undefined,
+      courseDuration: medication?.course?.durationDays,
       startDate: medication?.course?.startDate ? format(parseISO(medication.course.startDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
       isOngoing: !medication?.course,
     },
@@ -83,7 +84,7 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
   function handleFormSubmit(values: z.infer<typeof formSchema>) {
     const output: Partial<Medication> = {
       ...values,
-      id: medication?.id || 0,
+      id: medication?.id || '',
       dose_times: values.active ? values.dose_times : []
     };
 
