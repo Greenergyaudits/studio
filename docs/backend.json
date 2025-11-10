@@ -1,0 +1,168 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Medication Minder application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "User's username."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "subscriptionId": {
+          "type": "string",
+          "description": "Reference to Subscription. (Relationship: User 1:1 Subscription)"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email"
+      ]
+    },
+    "Subscription": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Subscription",
+      "type": "object",
+      "description": "Represents a user's subscription level and associated features.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the subscription entity."
+        },
+        "subscriptionType": {
+          "type": "string",
+          "description": "Type of subscription (e.g., Basic, Premium)."
+        },
+        "maxMedicines": {
+          "type": "number",
+          "description": "Maximum number of medicines allowed for this subscription type."
+        },
+        "bloodPressureManager": {
+          "type": "boolean",
+          "description": "Indicates if blood pressure management feature is enabled for this subscription."
+        },
+        "diabeticManager": {
+          "type": "boolean",
+          "description": "Indicates if diabetic management feature is enabled for this subscription."
+        }
+      },
+      "required": [
+        "id",
+        "subscriptionType",
+        "maxMedicines"
+      ]
+    },
+    "Medicine": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Medicine",
+      "type": "object",
+      "description": "Represents a medication that a user takes.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the medicine entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the medication."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Current quantity of the medication."
+        },
+        "doseTimes": {
+          "type": "array",
+          "description": "Array of dose times for the medication (in HH:MM format).",
+          "items": {
+            "type": "string"
+          }
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Medicine)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "quantity",
+        "doseTimes",
+        "userId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. Includes 'subscriptionId' to link to subscription details.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/subscriptions/{subscriptionId}",
+        "definition": {
+          "entityName": "Subscription",
+          "schema": {
+            "$ref": "#/backend/entities/Subscription"
+          },
+          "description": "Stores subscription details, including subscription type and feature flags.",
+          "params": [
+            {
+              "name": "subscriptionId",
+              "description": "The unique identifier for the subscription."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/medicines/{medicineId}",
+        "definition": {
+          "entityName": "Medicine",
+          "schema": {
+            "$ref": "#/backend/entities/Medicine"
+          },
+          "description": "Stores medicine details for each user. Includes denormalized 'subscriptionId' from the parent `/users/{userId}` document for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "medicineId",
+              "description": "The unique identifier for the medicine."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the Medication Minder application, focusing on user-specific medication management with subscription-based features. The structure prioritizes Authorization Independence and QAPs. User data and their associated medications are stored under the `/users/{userId}` path to ensure that all data is scoped to a specific user. Subscriptions are stored in the `/subscriptions/{subscriptionId}` collection. Medicine documents are stored in the `/users/{userId}/medicines/{medicineId}` collection. The structure facilitates easy querying of a user's medication list and enforces clear ownership for each medicine. A crucial aspect of achieving Authorization Independence is that `medicines` collections include a denormalized `subscriptionId` from the parent `/users/{userId}` documents. This eliminates the need for `get()` calls to the parent document to enforce subscription-based rules, like limiting the number of medications for basic users. This denormalization enables atomic operations and improves security rule clarity. The segregation of user-specific data into separate paths, with denormalized `subscriptionId`, enables secure `list` operations, fulfilling QAPs. The data structure also provides easy extensibility for future features, like tracking medicine refills and managing subscription upgrades."
+  }
+}
