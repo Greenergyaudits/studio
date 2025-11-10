@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useUser, useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Pill, Loader2 } from 'lucide-react';
@@ -24,8 +24,11 @@ export default function LoginPage() {
     try {
       await signInWithPopup(auth, provider);
       // The useEffect will handle the redirect
-    } catch (error) {
-      console.error('Error signing in with Google', error);
+    } catch (error: any) {
+      // Don't log an error if the user cancels the popup
+      if (error.code !== 'auth/cancelled-popup-request') {
+        console.error('Error signing in with Google', error);
+      }
     }
   };
   
