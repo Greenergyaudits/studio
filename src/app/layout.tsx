@@ -30,6 +30,10 @@ export default function RootLayout({
           <FirebaseErrorListener />
           <div className="flex-grow">{children}</div>
           <Toaster />
+          <div className="py-8 px-6 text-center text-sm text-muted-foreground bg-muted/40 border-t">
+            <p className="font-semibold">Advertisements & Promotions</p>
+            <p className="text-xs">This space is reserved for ads.</p>
+          </div>
           <footer className="py-4 px-6 text-center text-sm text-muted-foreground bg-background border-t">
             <p>&copy; {new Date().getFullYear()} Greenergy Innovations (smc) Pvt. Ltd. All rights reserved.</p>
           </footer>
