@@ -69,7 +69,7 @@ export default function LoginPage() {
       const result = await signInWithPopup(auth, provider);
       await createUserProfile(result.user);
     } catch (error: any) {
-      if (error.code !== 'auth/cancelled-popup-request') {
+      if (error.code !== 'auth/cancelled-popup-request' && error.code !== 'auth/popup-closed-by-user') {
         console.error('Error signing in with Google', error);
         toast({
           variant: 'destructive',
@@ -277,5 +277,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
