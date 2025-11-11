@@ -74,9 +74,9 @@ import { NumberCarousel, NumberCarouselContent } from '@/components/ui/number-ca
 import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
-  systolic: z.coerce.number().min(50).max(300),
-  diastolic: z.coerce.number().min(30).max(200),
-  pulse: z.coerce.number().min(30).max(250),
+  systolic: z.coerce.number().min(0).max(250),
+  diastolic: z.coerce.number().min(0).max(250),
+  pulse: z.coerce.number().min(0).max(200),
   description: z.string().optional(),
   timestamp: z.date().default(new Date()),
 });
@@ -227,7 +227,7 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
                     control={form.control}
                     name="systolic"
                     render={({ field }) => (
-                        <NumberCarousel value={field.value} setValue={field.onChange} range={[50, 300]} />
+                        <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 250]} />
                     )}
                    />
                 </div>
@@ -238,7 +238,7 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
                     control={form.control}
                     name="diastolic"
                     render={({ field }) => (
-                        <NumberCarousel value={field.value} setValue={field.onChange} range={[30, 200]} />
+                        <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 250]} />
                     )}
                    />
                 </div>
@@ -249,7 +249,7 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
                     control={form.control}
                     name="pulse"
                     render={({ field }) => (
-                        <NumberCarousel value={field.value} setValue={field.onChange} range={[30, 250]} />
+                        <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 200]} />
                     )}
                    />
                 </div>
@@ -462,3 +462,5 @@ export default function BloodPressurePage() {
     </div>
   );
 }
+
+    
