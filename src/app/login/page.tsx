@@ -8,7 +8,8 @@ import {
   AuthError,
   signInAnonymously,
   createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { useUser, useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -146,6 +148,35 @@ export default function LoginPage() {
       setIsSubmitting(false);
     }
   };
+  
+    const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast({
+        variant: 'destructive',
+        title: 'Email required',
+        description: 'Please enter your email address to reset your password.',
+      });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await sendPasswordResetEmail(auth, resetEmail);
+      toast({
+        title: 'Password Reset Email Sent',
+        description: `If an account exists for ${resetEmail}, an email has been sent with instructions to reset your password.`,
+      });
+    } catch (error: any) {
+      // Don't reveal if the user exists or not, just give a generic success message.
+      toast({
+        title: 'Password Reset Email Sent',
+        description: `If an account exists for ${resetEmail}, an email has been sent with instructions to reset your password.`,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   if (isUserLoading || user) {
     return (
@@ -260,6 +291,33 @@ export default function LoginPage() {
               Skip for now and use Test Version
           </Button>
         </div>
+
+        <details className="group">
+          <summary className="cursor-pointer text-center text-sm text-muted-foreground hover:text-primary">
+            Forgot your password?
+          </summary>
+          <form onSubmit={handlePasswordReset} className="mt-4 space-y-4 rounded-lg border bg-muted/50 p-4">
+            <p className="text-sm text-muted-foreground">
+              Enter your email address and we will send you a link to reset your password.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="email-reset">Email</Label>
+              <Input
+                id="email-reset"
+                type="email"
+                placeholder="m@example.com"
+                required
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                disabled={isSubmitting}
+              />
+            </div>
+            <Button type="submit" className="w-full" variant="secondary" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send Reset Link
+            </Button>
+          </form>
+        </details>
 
 
         <p className="px-8 text-center text-sm text-muted-foreground">

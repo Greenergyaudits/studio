@@ -7,7 +7,7 @@ import { collection, doc, deleteDoc, addDoc, updateDoc } from 'firebase/firestor
 import { MedicationCard } from '@/components/medication-card';
 import { Alerts } from '@/components/alerts';
 import { Button } from '@/components/ui/button';
-import { Pill, Plus, Eye, EyeOff, Users, Menu, Phone, User, MessageSquare, LogOut, Loader2, HeartPulse, Droplets, Gem } from 'lucide-react';
+import { Pill, Plus, Eye, EyeOff, Users, Menu, Phone, User, MessageSquare, LogOut, Loader2, HeartPulse, Droplets, Gem, Settings, KeyRound } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -27,6 +27,8 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { differenceInDays, addDays } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -39,7 +41,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { getAuth, signOut } from 'firebase/auth';
+import { getAuth, signOut, sendPasswordResetEmail, updateProfile, type User as FirebaseUser } from 'firebase/auth';
 
 
 const DEMO_MEDICATIONS: Omit<Medication, 'id' | 'userId'>[] = [
@@ -106,6 +108,7 @@ export default function DashboardPage() {
   const { data: medicines, isLoading: isMedicinesLoading } = useCollection<Medication>(medicinesQuery);
   
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showDisabled, setShowDisabled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -329,6 +332,7 @@ export default function DashboardPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+       <SettingsDialog user={user} isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <aside className="hidden border-r bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
@@ -382,19 +386,22 @@ export default function DashboardPage() {
                 <Button variant="secondary" size="icon" className="rounded-full">
                   <Avatar>
                     <AvatarImage src={user?.photoURL ?? undefined} />
-                    <AvatarFallback>{user?.isAnonymous ? 'G' : user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{user?.displayName?.charAt(0) ?? user?.email?.charAt(0).toUpperCase() ?? 'G'}</AvatarFallback>
                   </Avatar>
                   <span className="sr-only">Toggle user menu</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{subscription ? `${subscription.subscriptionType} Plan` : (user?.isAnonymous ? 'Guest Account' : 'My Account')}</DropdownMenuLabel>
+                <DropdownMenuLabel>{user?.displayName ?? (subscription ? `${subscription.subscriptionType} Plan` : (user?.isAnonymous ? 'Guest Account' : 'My Account'))}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setIsUpgradeModalOpen(true)}>
                   <Gem className="mr-2 h-4 w-4" />
                   <span>Upgrade</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem disabled>Settings</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsSettingsOpen(true)}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem disabled>Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
@@ -480,8 +487,114 @@ export default function DashboardPage() {
     </div>
     </>
   );
-
-    
 }
 
-    
+
+function SettingsDialog({ user, isOpen, onOpenChange }: { user: FirebaseUser | null, isOpen: boolean, onOpenChange: (open: boolean) => void }) {
+  const [displayName, setDisplayName] = useState(user?.displayName ?? '');
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (user?.displayName) {
+      setDisplayName(user.displayName);
+    }
+  }, [user]);
+
+  const handleSaveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setIsSaving(true);
+    try {
+      await updateProfile(user, { displayName });
+      toast({
+        title: "Success",
+        description: "Your display name has been updated.",
+      });
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: "Error",
+        description: "Could not update display name. " + error.message,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!user?.email) {
+       toast({
+          variant: 'destructive',
+          title: "Error",
+          description: "Cannot reset password without an email address.",
+        });
+      return;
+    };
+    try {
+      const auth = getAuth();
+      await sendPasswordResetEmail(auth, user.email);
+      toast({
+        title: "Password Reset Email Sent",
+        description: `An email has been sent to ${user.email} with instructions to reset your password.`,
+      });
+      onOpenChange(false);
+    } catch (error: any) {
+       toast({
+          variant: 'destructive',
+          title: "Error",
+          description: "Failed to send password reset email. " + error.message,
+        });
+    }
+  };
+  
+  const isEmailPasswordUser = user?.providerData.some(p => p.providerId === 'password');
+
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Account Settings</DialogTitle>
+          <DialogDescription>
+            Manage your account details and password.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <form onSubmit={handleSaveName} className="space-y-4 pt-4">
+          <div className="space-y-2">
+            <Label htmlFor="displayName">Display Name</Label>
+            <Input
+              id="displayName"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Your Name"
+              disabled={isSaving}
+            />
+          </div>
+          <Button type="submit" disabled={isSaving || displayName === user?.displayName}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Save Name
+          </Button>
+        </form>
+
+        <hr className="my-2" />
+
+        {isEmailPasswordUser && (
+          <div className="space-y-2">
+              <h3 className="font-medium">Password Reset</h3>
+              <p className="text-sm text-muted-foreground">
+                Click the button below to send a password reset link to your email address.
+              </p>
+              <Button onClick={handlePasswordReset} variant="outline">
+                  <KeyRound className="mr-2" />
+                  Send Password Reset Email
+              </Button>
+          </div>
+        )}
+
+      </DialogContent>
+    </Dialog>
+  );
+}
