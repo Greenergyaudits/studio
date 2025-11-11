@@ -227,7 +227,9 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
                     control={form.control}
                     name="systolic"
                     render={({ field }) => (
-                        <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 250]} />
+                        <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 250]}>
+                           <NumberCarouselContent />
+                        </NumberCarousel>
                     )}
                    />
                 </div>
@@ -238,7 +240,9 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
                     control={form.control}
                     name="diastolic"
                     render={({ field }) => (
-                        <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 250]} />
+                         <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 250]}>
+                           <NumberCarouselContent />
+                        </NumberCarousel>
                     )}
                    />
                 </div>
@@ -249,7 +253,9 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
                     control={form.control}
                     name="pulse"
                     render={({ field }) => (
-                        <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 200]} />
+                         <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 200]}>
+                           <NumberCarouselContent />
+                        </NumberCarousel>
                     )}
                    />
                 </div>
@@ -462,5 +468,3 @@ export default function BloodPressurePage() {
     </div>
   );
 }
-
-    
