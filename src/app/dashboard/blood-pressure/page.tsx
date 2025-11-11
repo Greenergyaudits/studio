@@ -245,6 +245,15 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
               />
             </div>
             
+            <div className="space-y-2">
+              <Label>Add details</Label>
+              <div className="flex items-center gap-2">
+                <Button type="button" variant="outline">Arm +</Button>
+                <Button type="button" variant="outline">Position +</Button>
+                <Button type="button" variant="outline">Conditions +</Button>
+              </div>
+            </div>
+
             <FormField
               control={form.control}
               name="timestamp"
