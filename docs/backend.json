@@ -131,7 +131,17 @@
         "systolic": { "type": "number" },
         "diastolic": { "type": "number" },
         "pulse": { "type": "number" },
-        "timestamp": { "type": "string", "format": "date-time" }
+        "timestamp": { "type": "string", "format": "date-time" },
+        "arm": { "type": "string", "enum": ["left", "right"] },
+        "position": { "type": "string", "enum": ["sitting", "laying", "standing"] },
+        "conditions": {
+          "type": "object",
+          "properties": {
+            "meal": { "type": "string", "enum": ["before", "after"] },
+            "medicine": { "type": "string", "enum": ["before", "after"] },
+            "activity": { "type": "string", "enum": ["before", "after"] }
+          }
+        }
       },
       "required": ["id", "userId", "systolic", "diastolic", "pulse", "timestamp"]
     },

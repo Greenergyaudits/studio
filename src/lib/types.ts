@@ -28,6 +28,13 @@ export type BloodPressureReading = {
   diastolic: number;
   pulse: number;
   timestamp: string; // ISO 8601
+  arm?: 'left' | 'right';
+  position?: 'sitting' | 'laying' | 'standing';
+  conditions?: {
+    meal?: 'before' | 'after';
+    medicine?: 'before' | 'after';
+    activity?: 'before' | 'after';
+  };
 };
 
 export type DiabeticReading = {

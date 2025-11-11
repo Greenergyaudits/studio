@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, Timestamp, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import type { BloodPressureReading } from '@/lib/types';
@@ -11,7 +11,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
@@ -21,7 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -34,7 +33,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Plus, ArrowLeft, Trash2, LineChart, Calendar, Info } from 'lucide-react';
+import { Loader2, Plus, ArrowLeft, Trash2, LineChart, Calendar, Info, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -72,6 +71,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
+import { ArmSelectionDialog, PositionSelectionDialog, ConditionsSelectionDialog } from '@/components/blood-pressure-details-dialogs';
+import { Badge } from '@/components/ui/badge';
+
 
 const formSchema = z.object({
   systolic: z.coerce.number().min(0, "Invalid").max(300, "Invalid"),
@@ -79,6 +81,13 @@ const formSchema = z.object({
   pulse: z.coerce.number().min(0, "Invalid").max(300, "Invalid"),
   description: z.string().optional(),
   timestamp: z.date().default(new Date()),
+  arm: z.enum(['left', 'right']).optional(),
+  position: z.enum(['sitting', 'laying', 'standing']).optional(),
+  conditions: z.object({
+    meal: z.enum(['before', 'after']).optional(),
+    medicine: z.enum(['before', 'after']).optional(),
+    activity: z.enum(['before', 'after']).optional(),
+  }).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -149,6 +158,10 @@ function CategoriesInfoSheet() {
 function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
   const { user } = useUser();
   const firestore = useFirestore();
+  const [isArmOpen, setIsArmOpen] = useState(false);
+  const [isPositionOpen, setIsPositionOpen] = useState(false);
+  const [isConditionsOpen, setIsConditionsOpen] = useState(false);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -157,10 +170,11 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
       pulse: 70,
       description: "",
       timestamp: new Date(),
+      conditions: {},
     },
   });
 
-  const { systolic, diastolic } = form.watch();
+  const { systolic, diastolic, arm, position, conditions } = form.watch();
   const bpCategory = getBpCategory(systolic, diastolic);
 
   const handleAddReading = async (values: FormData) => {
@@ -174,8 +188,40 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
     onOpenChange(false);
     form.reset();
   };
+  
+  const getConditionsCount = (conditions: FormData['conditions']) => {
+    if (!conditions) return 0;
+    return Object.values(conditions).filter(Boolean).length;
+  }
 
   return (
+    <>
+      <ArmSelectionDialog 
+        isOpen={isArmOpen} 
+        onOpenChange={setIsArmOpen}
+        value={arm}
+        onChange={(value) => form.setValue('arm', value)}
+      />
+      <PositionSelectionDialog
+        isOpen={isPositionOpen}
+        onOpenChange={setIsPositionOpen}
+        value={position}
+        onChange={(value) => form.setValue('position', value)}
+      />
+      <Controller
+        control={form.control}
+        name="conditions"
+        render={({ field }) => (
+          <ConditionsSelectionDialog
+            isOpen={isConditionsOpen}
+            onOpenChange={setIsConditionsOpen}
+            value={field.value}
+            onChange={field.onChange}
+          />
+        )}
+      />
+
+
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -246,13 +292,33 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
               />
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Add details</Label>
-              <div className="flex items-center gap-2">
-                <Button type="button" variant="outline">Arm +</Button>
-                <Button type="button" variant="outline">Position +</Button>
-                <Button type="button" variant="outline">Conditions +</Button>
-              </div>
+               <div className="grid gap-2">
+                    <Button type="button" variant="outline" className="justify-between" onClick={() => setIsArmOpen(true)}>
+                        <span>Arm</span>
+                        <div className="flex items-center gap-2">
+                           {arm && <span className="capitalize text-muted-foreground">{arm}</span>}
+                           <ChevronRight className="h-4 w-4" />
+                        </div>
+                    </Button>
+                     <Button type="button" variant="outline" className="justify-between" onClick={() => setIsPositionOpen(true)}>
+                        <span>Position</span>
+                         <div className="flex items-center gap-2">
+                           {position && <span className="capitalize text-muted-foreground">{position}</span>}
+                           <ChevronRight className="h-4 w-4" />
+                        </div>
+                    </Button>
+                     <Button type="button" variant="outline" className="justify-between" onClick={() => setIsConditionsOpen(true)}>
+                        <span>Conditions</span>
+                         <div className="flex items-center gap-2">
+                           {getConditionsCount(conditions) > 0 && (
+                             <Badge variant="secondary">{getConditionsCount(conditions)} selected</Badge>
+                           )}
+                           <ChevronRight className="h-4 w-4" />
+                        </div>
+                    </Button>
+               </div>
             </div>
 
             <FormField
@@ -292,6 +358,7 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
         </Form>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
 
