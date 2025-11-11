@@ -251,7 +251,11 @@ export default function DashboardPage() {
         Blood Pressure
         {!isSubscriptionLoading && !subscription?.bloodPressureManager && <Gem className="ml-auto h-4 w-4 text-accent" />}
       </Button>
-       <Button variant="ghost" className="justify-start" onClick={() => !subscription?.diabeticManager && setIsUpgradeModalOpen(true)} disabled={isSubscriptionLoading}>
+       <Button 
+        variant="ghost" 
+        className="justify-start" 
+        onClick={() => subscription?.diabeticManager ? navigateToPremiumFeature('/dashboard/diabetic') : setIsUpgradeModalOpen(true)} 
+        disabled={isSubscriptionLoading}>
         <Droplets className="mr-2" />
         Diabetic Manager
         {!isSubscriptionLoading && !subscription?.diabeticManager && <Gem className="ml-auto h-4 w-4 text-accent" />}
