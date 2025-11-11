@@ -248,7 +248,7 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
                     <FormControl>
                       <Input
                         type="number"
-                        className="text-center text-4xl h-20 font-bold"
+                        className="text-center text-3xl h-20 font-bold"
                         {...field}
                       />
                     </FormControl>
@@ -265,7 +265,7 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
                     <FormControl>
                       <Input
                         type="number"
-                        className="text-center text-4xl h-20 font-bold"
+                        className="text-center text-3xl h-20 font-bold"
                         {...field}
                       />
                     </FormControl>
@@ -282,7 +282,7 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
                     <FormControl>
                       <Input
                         type="number"
-                        className="text-center text-4xl h-20 font-bold"
+                        className="text-center text-3xl h-20 font-bold"
                         {...field}
                       />
                     </FormControl>
