@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInAnonymously,
   AuthError,
 } from 'firebase/auth';
 import { useUser, useAuth } from '@/firebase';
@@ -49,6 +50,18 @@ export default function LoginPage() {
       }
     }
   };
+  
+  const handleAnonymousSignIn = async () => {
+    setIsSubmitting(true);
+    try {
+      await signInAnonymously(auth);
+      // The useEffect will handle the redirect
+    } catch (error) {
+       handleAuthError(error as AuthError);
+    } finally {
+        setIsSubmitting(false);
+    }
+  }
 
   const handleAuthError = (error: AuthError) => {
     let description = 'An unexpected error occurred. Please try again.';
@@ -204,7 +217,7 @@ export default function LoginPage() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-background px-2 text-muted-foreground">
-              Or continue with
+              Or
             </span>
           </div>
         </div>
@@ -212,6 +225,10 @@ export default function LoginPage() {
         <Button onClick={handleGoogleSignIn} className="w-full" variant="outline" size="lg" disabled={isSubmitting}>
           <FcGoogle className="mr-2 h-5 w-5" />
           Sign In with Google
+        </Button>
+
+        <Button onClick={handleAnonymousSignIn} className="w-full" variant="link" disabled={isSubmitting}>
+            Skip for now
         </Button>
 
         <p className="px-8 text-center text-sm text-muted-foreground">
