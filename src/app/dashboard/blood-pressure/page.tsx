@@ -14,6 +14,13 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -26,7 +33,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Loader2, Plus, ArrowLeft, Trash2, LineChart, Calendar, Info, Armchair, MapPin } from 'lucide-react';
+import { Loader2, Plus, ArrowLeft, Trash2, LineChart, Calendar, Info, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -65,8 +72,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { NumberCarousel, NumberCarouselContent } from '@/components/ui/number-carousel';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-
 
 const formSchema = z.object({
   systolic: z.coerce.number().min(50).max(300),
@@ -94,20 +99,52 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 const bpCategories = {
-    NORMAL: { label: "Normal", color: "bg-green-500", range: "SYS < 120 and DIA < 80" },
-    ELEVATED: { label: "Elevated", color: "bg-yellow-500", range: "SYS 120-129 and DIA < 80" },
-    HYPERTENSION_1: { label: "Hypertension Stage 1", color: "bg-orange-500", range: "SYS 130-139 or DIA 80-89" },
-    HYPERTENSION_2: { label: "Hypertension Stage 2", color: "bg-red-500", range: "SYS >= 140 or DIA >= 90" },
-    HYPERTENSIVE_CRISIS: { label: "Hypertensive Crisis", color: "bg-red-700", range: "SYS > 180 and/or DIA > 120" },
+    HYPOTENSION: { label: "Hypotension", color: "bg-blue-500", range: "SYS < 90 or DIA < 60" },
+    NORMAL: { label: "Normal", color: "bg-green-500", range: "SYS 90-119 or DIA 60-79" },
+    ELEVATED: { label: "Elevated", color: "bg-yellow-500", range: "SYS 120-129 or DIA 80-89" },
+    HYPERTENSION_1: { label: "Hypertension - Stage 1", color: "bg-orange-500", range: "SYS 130-139 or DIA 80-89" },
+    HYPERTENSION_2: { label: "Hypertension - Stage 2", color: "bg-red-500", range: "SYS 140-180 or DIA 90-120" },
+    HYPERTENSIVE_CRISIS: { label: "Hypertensive", color: "bg-red-700", range: "SYS > 180 or DIA > 120" },
 };
 
 const getBpCategory = (systolic: number, diastolic: number) => {
-    if (systolic > 180 || diastolic > 120) return bpCategories.HYPERTENSIVE_CRISIS;
-    if (systolic >= 140 || diastolic >= 90) return bpCategories.HYPERTENSION_2;
-    if (systolic >= 130 || diastolic >= 80) return bpCategories.HYPERTENSION_1;
-    if (systolic >= 120) return bpCategories.ELEVATED;
-    return bpCategories.NORMAL;
+    if (systolic < 90 || diastolic < 60) return bpCategories.HYPOTENSION;
+    if (systolic <= 119 && diastolic <= 79) return bpCategories.NORMAL;
+    if (systolic <= 129 && diastolic <= 89) return bpCategories.ELEVATED;
+    if (systolic <= 139 || diastolic <= 89) return bpCategories.HYPERTENSION_1;
+    if (systolic <= 180 || diastolic <= 120) return bpCategories.HYPERTENSION_2;
+    return bpCategories.HYPERTENSIVE_CRISIS;
 }
+
+
+function CategoriesInfoSheet() {
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+          <Info className="h-5 w-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="rounded-t-lg">
+        <SheetHeader className="text-center">
+          <SheetTitle>Categories</SheetTitle>
+        </SheetHeader>
+        <div className="py-4 space-y-4">
+          {Object.values(bpCategories).map(category => (
+            <div key={category.label} className="flex items-center gap-4">
+              <span className={cn("h-6 w-6 rounded-full", category.color)}></span>
+              <div>
+                <p className="font-semibold">{category.label}</p>
+                <p className="text-sm text-muted-foreground">{category.range}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 
 function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
   const { user } = useUser();
@@ -179,16 +216,7 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
                   <p className="font-semibold">{bpCategory.label}</p>
                   <p className="text-sm text-muted-foreground">{bpCategory.range}</p>
                 </div>
-                 <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-5 w-5 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Blood pressure categories are based on AHA guidelines.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                 <CategoriesInfoSheet />
               </div>
 
               <div className="flex justify-between items-start pt-4">
@@ -431,3 +459,5 @@ export default function BloodPressurePage() {
     </div>
   );
 }
+
+    
