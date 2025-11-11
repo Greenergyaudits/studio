@@ -12,18 +12,45 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
-    
+
+    // Get user's subscription data
+    function getSubscription(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.subscriptionId;
+    }
+
+    // Get subscription details
+    function getSubscriptionDetails(subscriptionId) {
+      return get(/databases/$(database)/documents/subscriptions/$(subscriptionId)).data;
+    }
+
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      // On create, a new user document is created with a subscriptionId
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow read, update: if isOwner(userId);
     }
 
     match /users/{userId}/medicines/{medicineId} {
-      allow read, write, delete: if isOwner(userId);
+      allow read, delete: if isOwner(userId);
+      allow write: if isOwner(userId) && 
+                      (getSubscriptionDetails(getSubscription(userId)).subscriptionType == 'Premium' || 
+                      list(/databases/$(database)/documents/users/$(userId)/medicines).size() < getSubscriptionDetails(getSubscription(userId)).maxMedicines);
+    }
+
+    match /users/{userId}/bloodPressureReadings/{readingId} {
+        allow read, write, delete: if isOwner(userId) && getSubscriptionDetails(getSubscription(userId)).bloodPressureManager == true;
+    }
+
+    match /users/{userId}/diabeticReadings/{readingId} {
+        allow read, write, delete: if isOwner(userId) && getSubscriptionDetails(getSubscription(userId)).diabeticManager == true;
     }
 
     match /subscriptions/{subscriptionId} {
       allow read: if isSignedIn();
-      allow write: if false; // Managed by backend
+      // Only backend can create/update subscriptions. This is a simplified rule.
+      // In a real app, this would be handled by a Cloud Function with admin privileges.
+      allow write: if false; 
     }
   }
 }
+
+    

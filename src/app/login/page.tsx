@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import {
   signInWithPopup,
   GoogleAuthProvider,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signInAnonymously,
   AuthError,
+  signInAnonymously,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword
 } from 'firebase/auth';
 import { useUser, useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -18,10 +18,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Pill, Loader2 } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import { useToast } from '@/hooks/use-toast';
+import { getFirestore, doc, getDoc, setDoc, writeBatch, collection } from 'firebase/firestore';
 
 export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = getFirestore(auth.app);
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
 
@@ -35,10 +37,37 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
+  const createUserProfile = async (user: import('firebase/auth').User) => {
+    const userRef = doc(firestore, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+        const subscriptionRef = doc(collection(firestore, "subscriptions"));
+        
+        const batch = writeBatch(firestore);
+
+        batch.set(subscriptionRef, {
+            subscriptionType: "Basic",
+            maxMedicines: 5,
+            bloodPressureManager: false,
+            diabeticManager: false
+        });
+
+        batch.set(userRef, {
+            email: user.email,
+            subscriptionId: subscriptionRef.id
+        });
+        
+        await batch.commit();
+    }
+  };
+
+
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      await createUserProfile(result.user);
     } catch (error: any) {
       if (error.code !== 'auth/cancelled-popup-request') {
         console.error('Error signing in with Google', error);
@@ -54,8 +83,8 @@ export default function LoginPage() {
   const handleAnonymousSignIn = async () => {
     setIsSubmitting(true);
     try {
-      await signInAnonymously(auth);
-      // The useEffect will handle the redirect
+      const result = await signInAnonymously(auth);
+      await createUserProfile(result.user);
     } catch (error) {
        handleAuthError(error as AuthError);
     } finally {
@@ -97,8 +126,8 @@ export default function LoginPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      // The useEffect will handle the redirect
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      await createUserProfile(result.user);
     } catch (error) {
       handleAuthError(error as AuthError);
     } finally {
@@ -111,7 +140,6 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // The useEffect will handle the redirect
     } catch (error) {
       handleAuthError(error as AuthError);
     } finally {

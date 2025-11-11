@@ -1,19 +1,21 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import type { Medication } from '@/lib/types';
-import { WithId, useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
+import type { Medication, Subscription } from '@/lib/types';
+import { WithId, useCollection, useUser, useFirestore, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, doc, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { MedicationCard } from '@/components/medication-card';
 import { Alerts } from '@/components/alerts';
 import { Button } from '@/components/ui/button';
-import { Pill, Plus, Eye, EyeOff, Users, Menu, Phone, User, MessageSquare, LogOut, Loader2 } from 'lucide-react';
+import { Pill, Plus, Eye, EyeOff, Users, Menu, Phone, User, MessageSquare, LogOut, Loader2, HeartPulse, Droplets, Gem } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter
 } from '@/components/ui/dialog';
 import { MedicationForm } from '@/components/medication-form';
 import { EmergencyContact, type EmergencyContactDetails } from '@/components/emergency-contact';
@@ -74,6 +76,19 @@ export default function DashboardPage() {
   const router = useRouter();
   const firestore = useFirestore();
 
+  const userProfileRef = useMemoFirebase(
+    () => (user ? doc(firestore, 'users', user.uid) : null),
+    [user, firestore]
+  );
+  const { data: userProfile, isLoading: isUserLoadingProfile } = useDoc<{subscriptionId: string}>(userProfileRef);
+
+  const subscriptionRef = useMemoFirebase(
+    () => (userProfile?.subscriptionId ? doc(firestore, 'subscriptions', userProfile.subscriptionId) : null),
+    [userProfile]
+  );
+  const { data: subscription, isLoading: isSubscriptionLoading } = useDoc<Subscription>(subscriptionRef);
+
+
   const medicinesQuery = useMemoFirebase(
     () => (user ? collection(firestore, 'users', user.uid, 'medicines') : null),
     [user, firestore]
@@ -83,6 +98,7 @@ export default function DashboardPage() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [showDisabled, setShowDisabled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [emergencyContact, setEmergencyContact] = useState<EmergencyContactDetails | null>(null);
   const { toast } = useToast();
 
@@ -121,6 +137,14 @@ export default function DashboardPage() {
       window.removeEventListener('storage', getContact);
     };
   }, []);
+
+  const handleAddMedicationAttempt = () => {
+    if (subscription && medicines && medicines.length >= subscription.maxMedicines) {
+      setIsUpgradeModalOpen(true);
+    } else {
+      setIsAddOpen(true);
+    }
+  };
 
   const handleAddMedication = async (newMedicationData: Partial<Medication>) => {
     if (!user) return;
@@ -186,29 +210,29 @@ export default function DashboardPage() {
 
   const sidebarContent = (
     <div className="flex flex-col gap-4">
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogTrigger asChild>
-          <Button>
-            <Plus className="mr-2" />
-            Add Medication
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Medication</DialogTitle>
-          </DialogHeader>
-          <MedicationForm
-            onSubmit={handleAddMedication}
-            onClose={() => setIsAddOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+       <Button onClick={handleAddMedicationAttempt}>
+        <Plus className="mr-2" />
+        Add Medication
+      </Button>
 
       <EmergencyContact />
 
       <Button variant="outline" onClick={() => setShowDisabled(prev => !prev)}>
         {showDisabled ? <EyeOff className="mr-2" /> : <Eye className="mr-2" />}
         {showDisabled ? 'Hide Inactive' : 'Show Inactive'}
+      </Button>
+
+      <hr className="my-2" />
+       <h3 className="px-4 text-sm font-semibold text-muted-foreground">Premium Features</h3>
+      <Button variant="ghost" className="justify-start" onClick={() => !subscription?.bloodPressureManager && setIsUpgradeModalOpen(true)} disabled={isSubscriptionLoading}>
+        <HeartPulse className="mr-2" />
+        Blood Pressure
+        {!isSubscriptionLoading && !subscription?.bloodPressureManager && <Gem className="ml-auto h-4 w-4 text-accent" />}
+      </Button>
+       <Button variant="ghost" className="justify-start" onClick={() => !subscription?.diabeticManager && setIsUpgradeModalOpen(true)} disabled={isSubscriptionLoading}>
+        <Droplets className="mr-2" />
+        Diabetic Manager
+        {!isSubscriptionLoading && !subscription?.diabeticManager && <Gem className="ml-auto h-4 w-4 text-accent" />}
       </Button>
     </div>
   );
@@ -242,7 +266,7 @@ export default function DashboardPage() {
     window.open(whatsappUrl, '_blank');
   };
 
-  if (isUserLoading) {
+  if (isUserLoading || isUserLoadingProfile || isSubscriptionLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -251,6 +275,50 @@ export default function DashboardPage() {
   }
 
   return (
+    <>
+    <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Medication</DialogTitle>
+          </DialogHeader>
+          <MedicationForm
+            onSubmit={handleAddMedication}
+            onClose={() => setIsAddOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isUpgradeModalOpen} onOpenChange={setIsUpgradeModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Gem className="text-accent"/> Upgrade to Premium</DialogTitle>
+            <DialogDescription>
+              Unlock powerful features by upgrading your account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+              <p>The free plan is limited to {subscription?.maxMedicines} medications.</p>
+              <p>Upgrade to Premium to add unlimited medications and get access to:</p>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>
+                  <span className="font-semibold">Blood Pressure Manager:</span> Track your blood pressure readings and trends.
+                </li>
+                <li>
+                  <span className="font-semibold">Diabetic Manager:</span> Monitor your blood sugar levels and insulin doses.
+                </li>
+              </ul>
+              <p className="text-center text-lg font-bold">Only $9.99/month</p>
+          </div>
+          <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsUpgradeModalOpen(false)}>Maybe Later</Button>
+              <Button onClick={() => {
+                toast({ title: "Redirecting to payment...", description: "This is a demo. No payment will be processed."});
+                setIsUpgradeModalOpen(false);
+              }} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                Upgrade Now
+              </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
       <aside className="hidden border-r bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
@@ -310,8 +378,12 @@ export default function DashboardPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{user?.isAnonymous ? 'Guest Account' : 'My Account'}</DropdownMenuLabel>
+                <DropdownMenuLabel>{subscription ? `${subscription.subscriptionType} Plan` : (user?.isAnonymous ? 'Guest Account' : 'My Account')}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setIsUpgradeModalOpen(true)}>
+                  <Gem className="mr-2 h-4 w-4" />
+                  <span>Upgrade</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem disabled>Settings</DropdownMenuItem>
                 <DropdownMenuItem disabled>Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -367,7 +439,7 @@ export default function DashboardPage() {
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-headline text-2xl font-semibold">
-                My Medications
+                My Medications ({medicines?.length || 0} / {subscription?.maxMedicines})
               </h2>
             </div>
             {isMedicinesLoading ? (
@@ -396,6 +468,7 @@ export default function DashboardPage() {
         </main>
       </div>
     </div>
+    </>
   );
 
     

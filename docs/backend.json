@@ -10,10 +10,6 @@
           "type": "string",
           "description": "Unique identifier for the user entity."
         },
-        "username": {
-          "type": "string",
-          "description": "User's username."
-        },
         "email": {
           "type": "string",
           "description": "User's email address.",
@@ -26,8 +22,8 @@
       },
       "required": [
         "id",
-        "username",
-        "email"
+        "email",
+        "subscriptionId"
       ]
     },
     "Subscription": {
@@ -42,7 +38,8 @@
         },
         "subscriptionType": {
           "type": "string",
-          "description": "Type of subscription (e.g., Basic, Premium)."
+          "enum": ["Basic", "Premium"],
+          "description": "Type of subscription."
         },
         "maxMedicines": {
           "type": "number",
@@ -60,7 +57,9 @@
       "required": [
         "id",
         "subscriptionType",
-        "maxMedicines"
+        "maxMedicines",
+        "bloodPressureManager",
+        "diabeticManager"
       ]
     },
     "Medicine": {
@@ -121,6 +120,33 @@
         "dose_times",
         "userId"
       ]
+    },
+     "BloodPressure": {
+      "title": "BloodPressure",
+      "type": "object",
+      "description": "Represents a single blood pressure reading for a user.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "systolic": { "type": "number" },
+        "diastolic": { "type": "number" },
+        "pulse": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "systolic", "diastolic", "pulse", "timestamp"]
+    },
+    "Diabetic": {
+      "title": "Diabetic",
+      "type": "object",
+      "description": "Represents a single diabetic reading for a user.",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "glucoseLevel": { "type": "number" },
+        "readingType": { "type": "string", "enum": ["fasting", "post-meal", "random"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "glucoseLevel", "readingType", "timestamp"]
     }
   },
   "auth": {
@@ -171,7 +197,7 @@
           "schema": {
             "$ref": "#/backend/entities/Medicine"
           },
-          "description": "Stores medicine details for each user. Includes denormalized 'subscriptionId' from the parent `/users/{userId}` document for authorization independence.",
+          "description": "Stores medicine details for each user.",
           "params": [
             {
               "name": "userId",
@@ -183,8 +209,22 @@
             }
           ]
         }
+      },
+       {
+        "path": "/users/{userId}/bloodPressureReadings/{readingId}",
+        "definition": {
+          "schema": { "$ref": "#/backend/entities/BloodPressure" },
+          "description": "Blood pressure readings for a user."
+        }
+      },
+      {
+        "path": "/users/{userId}/diabeticReadings/{readingId}",
+        "definition": {
+          "schema": { "$ref": "#/backend/entities/Diabetic" },
+          "description": "Diabetic readings for a user."
+        }
       }
-    ],
-    "reasoning": "The Firestore data structure is designed to support the Medication Minder application, focusing on user-specific medication management with subscription-based features. The structure prioritizes Authorization Independence and QAPs. User data and their associated medications are stored under the `/users/{userId}` path to ensure that all data is scoped to a specific user. Subscriptions are stored in the `/subscriptions/{subscriptionId}` collection. Medicine documents are stored in the `/users/{userId}/medicines/{medicineId}` collection. The structure facilitates easy querying of a user's medication list and enforces clear ownership for each medicine. A crucial aspect of achieving Authorization Independence is that `medicines` collections include a denormalized `subscriptionId` from the parent `/users/{userId}` documents. This eliminates the need for `get()` calls to the parent document to enforce subscription-based rules, like limiting the number of medications for basic users. This denormalization enables atomic operations and improves security rule clarity. The segregation of user-specific data into separate paths, with denormalized `subscriptionId`, enables secure `list` operations, fulfilling QAPs. The data structure also provides easy extensibility for future features, like tracking medicine refills and managing subscription upgrades."
+    ]
   }
 }
+    
