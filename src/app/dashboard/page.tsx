@@ -76,15 +76,27 @@ export default function DashboardPage() {
   const router = useRouter();
   const firestore = useFirestore();
 
-  // SIMULATE PREMIUM SUBSCRIPTION
-  const subscription: Subscription | null = {
-      id: 'simulated-premium-sub',
-      subscriptionType: 'Premium',
-      maxMedicines: 999,
-      bloodPressureManager: true,
-      diabeticManager: true,
-  };
-  const isSubscriptionLoading = false;
+  const userDocRef = useMemoFirebase(() => (user ? doc(firestore, 'users', user.uid) : null), [user, firestore]);
+  const { data: userProfile } = useDoc(userDocRef);
+
+  const subscriptionDocRef = useMemoFirebase(
+    () => (userProfile?.subscriptionId ? doc(firestore, 'subscriptions', userProfile.subscriptionId) : null),
+    [userProfile]
+  );
+  const { data: fetchedSubscription, isLoading: isSubscriptionLoading } = useDoc<Subscription>(subscriptionDocRef);
+  
+  const subscription = useMemo(() => {
+    if (user?.email === 'atif.adeel.1981@gmail.com') {
+      return {
+        id: 'special-access-sub',
+        subscriptionType: 'Premium',
+        maxMedicines: 999,
+        bloodPressureManager: true,
+        diabeticManager: true,
+      } as Subscription;
+    }
+    return fetchedSubscription;
+  }, [user, fetchedSubscription]);
 
 
   const medicinesQuery = useMemoFirebase(
@@ -190,7 +202,7 @@ export default function DashboardPage() {
         if (m.active === false) return false;
         if (m.course) {
             const startDate = new Date(m.course.startDate);
-            const endDate = addDays(startDate, med.course.durationDays);
+            const endDate = addDays(startDate, m.course.durationDays);
             return differenceInDays(endDate, new Date()) >= 0;
         }
         return true;
