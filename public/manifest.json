@@ -1,11 +1,8 @@
+
 {
   "name": "MEDIC REMINDER",
   "short_name": "MedReminder",
   "description": "Your personal assistant for staying on top of your medication schedule and supplies.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#F0F4F8",
-  "theme_color": "#64B5F6",
   "icons": [
     {
       "src": "/icon-192x192.png",
@@ -17,5 +14,10 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "theme_color": "#1295D8",
+  "background_color": "#F3F6F9",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait"
 }
