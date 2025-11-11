@@ -21,7 +21,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -33,7 +33,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Loader2, Plus, ArrowLeft, Trash2, LineChart, Calendar, Info, X } from 'lucide-react';
+import { Loader2, Plus, ArrowLeft, Trash2, LineChart, Calendar, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -70,13 +70,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { NumberCarousel, NumberCarouselContent } from '@/components/ui/number-carousel';
 import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
-  systolic: z.coerce.number().min(0).max(250),
-  diastolic: z.coerce.number().min(0).max(250),
-  pulse: z.coerce.number().min(0).max(200),
+  systolic: z.coerce.number().min(0, "Invalid").max(300, "Invalid"),
+  diastolic: z.coerce.number().min(0, "Invalid").max(300, "Invalid"),
+  pulse: z.coerce.number().min(0, "Invalid").max(300, "Invalid"),
   description: z.string().optional(),
   timestamp: z.date().default(new Date()),
 });
@@ -177,101 +176,107 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0">
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add Blood Pressure Reading</DialogTitle>
+        </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleAddReading)}>
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle>Blood Pressure</DialogTitle>
-            </DialogHeader>
-            <div className="p-6 space-y-4">
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input placeholder="Add description" className="border-0 border-b rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="timestamp"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Button variant="outline" type="button" className="w-full justify-start text-left font-normal">
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {format(field.value, "PPP HH:mm")}
-                      </Button>
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <div className={cn("p-4 rounded-lg flex items-center gap-4", bpCategory.color.replace('bg-', 'bg-opacity-10 dark:bg-opacity-20 border border-'))}>
-                <span className={cn("h-3 w-3 rounded-full", bpCategory.color)}></span>
-                <div className="flex-1">
-                  <p className="font-semibold">{bpCategory.label}</p>
-                  <p className="text-sm text-muted-foreground">{bpCategory.range}</p>
-                </div>
-                 <CategoriesInfoSheet />
+          <form onSubmit={form.handleSubmit(handleAddReading)} className="space-y-6">
+            <div className={cn("p-4 rounded-lg flex items-center gap-4 border", bpCategory.color.replace('bg-','border-'))}>
+              <span className={cn("h-3 w-3 rounded-full", bpCategory.color)}></span>
+              <div className="flex-1">
+                <p className="font-semibold">{bpCategory.label}</p>
+                <p className="text-sm text-muted-foreground">{bpCategory.range}</p>
               </div>
-
-              <div className="flex justify-between items-start pt-4">
-                <div className="flex flex-col items-center gap-2">
-                  <FormLabel>Systolic</FormLabel>
-                  <span className="text-sm text-muted-foreground">mm Hg</span>
-                   <Controller
-                    control={form.control}
-                    name="systolic"
-                    render={({ field }) => (
-                        <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 250]}>
-                           <NumberCarouselContent />
-                        </NumberCarousel>
-                    )}
-                   />
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <FormLabel>Diastolic</FormLabel>
-                  <span className="text-sm text-muted-foreground">mm Hg</span>
-                   <Controller
-                    control={form.control}
-                    name="diastolic"
-                    render={({ field }) => (
-                         <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 250]}>
-                           <NumberCarouselContent />
-                        </NumberCarousel>
-                    )}
-                   />
-                </div>
-                <div className="flex flex-col items-center gap-2">
-                  <FormLabel>Pulse</FormLabel>
-                   <span className="text-sm text-muted-foreground">BPM</span>
-                   <Controller
-                    control={form.control}
-                    name="pulse"
-                    render={({ field }) => (
-                         <NumberCarousel value={field.value} setValue={field.onChange} range={[0, 200]}>
-                           <NumberCarouselContent />
-                        </NumberCarousel>
-                    )}
-                   />
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-sm mb-2">Add details</h4>
-                <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" type="button" size="sm"><Plus className="h-4 w-4 mr-1"/> Arm</Button>
-                    <Button variant="outline" type="button" size="sm"><Plus className="h-4 w-4 mr-1"/> Position</Button>
-                    <Button variant="outline" type="button" size="sm"><Plus className="h-4 w-4 mr-1"/> Conditions</Button>
-                </div>
-              </div>
+              <CategoriesInfoSheet />
             </div>
-            <DialogFooter className="p-6 bg-muted/40">
-              <Button type="submit" className="w-full">Done</Button>
+
+            <div className="grid grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="systolic"
+                render={({ field }) => (
+                  <FormItem className="text-center">
+                    <FormLabel>Systolic</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        className="text-center text-2xl h-20"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="diastolic"
+                render={({ field }) => (
+                  <FormItem className="text-center">
+                    <FormLabel>Diastolic</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        className="text-center text-2xl h-20"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pulse"
+                render={({ field }) => (
+                  <FormItem className="text-center">
+                    <FormLabel>Pulse</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        className="text-center text-2xl h-20"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="timestamp"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date & Time</FormLabel>
+                  <FormControl>
+                    <Button variant="outline" type="button" className="w-full justify-start text-left font-normal">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {format(field.value, "PPP HH:mm")}
+                    </Button>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Feeling tired" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button type="submit">Save Reading</Button>
             </DialogFooter>
           </form>
         </Form>
