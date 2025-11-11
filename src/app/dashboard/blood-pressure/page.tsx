@@ -100,20 +100,20 @@ const chartConfig = {
 
 const bpCategories = {
     HYPOTENSION: { label: "Hypotension", color: "bg-blue-500", range: "SYS < 90 or DIA < 60" },
-    NORMAL: { label: "Normal", color: "bg-green-500", range: "SYS 90-119 or DIA 60-79" },
-    ELEVATED: { label: "Elevated", color: "bg-yellow-500", range: "SYS 120-129 or DIA 80-89" },
+    NORMAL: { label: "Normal", color: "bg-green-500", range: "SYS 90-119 and DIA 60-79" },
+    ELEVATED: { label: "Elevated", color: "bg-yellow-500", range: "SYS 120-129 and DIA < 80" },
     HYPERTENSION_1: { label: "Hypertension - Stage 1", color: "bg-orange-500", range: "SYS 130-139 or DIA 80-89" },
-    HYPERTENSION_2: { label: "Hypertension - Stage 2", color: "bg-red-500", range: "SYS 140-180 or DIA 90-120" },
+    HYPERTENSION_2: { label: "Hypertension - Stage 2", color: "bg-red-500", range: "SYS >= 140 or DIA >= 90" },
     HYPERTENSIVE_CRISIS: { label: "Hypertensive", color: "bg-red-700", range: "SYS > 180 or DIA > 120" },
 };
 
 const getBpCategory = (systolic: number, diastolic: number) => {
+    if (systolic > 180 || diastolic > 120) return bpCategories.HYPERTENSIVE_CRISIS;
+    if (systolic >= 140 || diastolic >= 90) return bpCategories.HYPERTENSION_2;
+    if (systolic >= 130 || diastolic >= 80) return bpCategories.HYPERTENSION_1;
+    if (systolic >= 120 && diastolic < 80) return bpCategories.ELEVATED;
     if (systolic < 90 || diastolic < 60) return bpCategories.HYPOTENSION;
-    if (systolic <= 119 && diastolic <= 79) return bpCategories.NORMAL;
-    if (systolic <= 129 && diastolic <= 89) return bpCategories.ELEVATED;
-    if (systolic <= 139 || diastolic <= 89) return bpCategories.HYPERTENSION_1;
-    if (systolic <= 180 || diastolic <= 120) return bpCategories.HYPERTENSION_2;
-    return bpCategories.HYPERTENSIVE_CRISIS;
+    return bpCategories.NORMAL;
 }
 
 
@@ -127,7 +127,7 @@ function CategoriesInfoSheet() {
       </SheetTrigger>
       <SheetContent side="bottom" className="rounded-t-lg">
         <SheetHeader className="text-center">
-          <SheetTitle>Categories</SheetTitle>
+          <SheetTitle>Blood Pressure Categories</SheetTitle>
         </SheetHeader>
         <div className="py-4 space-y-4">
           {Object.values(bpCategories).map(category => (
@@ -169,7 +169,7 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
     await addDoc(readingRef, {
       ...values,
       userId: user.uid,
-      timestamp: values.timestamp.getTime().toString(),
+      timestamp: Timestamp.fromDate(values.timestamp),
     });
     onOpenChange(false);
     form.reset();
@@ -296,13 +296,16 @@ export default function BloodPressurePage() {
   }
   
   const chartData = useMemo(() => {
-    return (readings || [])
-        .map(r => ({ ...r, timestamp: parseInt(r.timestamp, 10)}))
-        .sort((a, b) => a.timestamp - b.timestamp)
-        .map(r => ({
-            ...r,
-            date: format(new Date(r.timestamp), 'MMM d, HH:mm'),
-        }));
+    if (!readings) return [];
+    const sortedReadings = [...readings].map(r => ({
+      ...r,
+      timestamp: (r.timestamp as any).toDate ? (r.timestamp as any).toDate() : new Date(r.timestamp),
+    })).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  
+    return sortedReadings.map(r => ({
+      ...r,
+      date: format(r.timestamp, 'MMM d, HH:mm'),
+    }));
   }, [readings]);
 
 
@@ -319,7 +322,7 @@ export default function BloodPressurePage() {
             </h1>
             <div className="relative ml-auto flex-1 md:grow-0">
                 <Button onClick={() => setIsAddOpen(true)} className="w-full">
-                    <Plus className="mr-2" /> Add Reading
+                    <Plus className="mr-2 h-4 w-4" /> Add Reading
                 </Button>
             </div>
       </header>
@@ -335,7 +338,7 @@ export default function BloodPressurePage() {
                            <div className="flex h-[350px] w-full items-center justify-center">
                              <Loader2 className="h-8 w-8 animate-spin text-primary" />
                            </div>
-                         ) : readings && readings.length > 1 ? (
+                         ) : chartData && chartData.length > 1 ? (
                            <div className="h-[350px]">
                             <ChartContainer config={chartConfig} className="h-full w-full">
                                 <RechartsLineChart
@@ -415,10 +418,10 @@ export default function BloodPressurePage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {readings.map((r: WithId<BloodPressureReading>) => (
+                                {chartData.map((r: WithId<BloodPressureReading>) => (
                                 <TableRow key={r.id}>
-                                    <TableCell>{format(new Date(parseInt(r.timestamp, 10)), 'MMM d, yyyy')}</TableCell>
-                                    <TableCell>{format(new Date(parseInt(r.timestamp, 10)), 'HH:mm')}</TableCell>
+                                    <TableCell>{format(r.timestamp, 'MMM d, yyyy')}</TableCell>
+                                    <TableCell>{format(r.timestamp, 'HH:mm')}</TableCell>
                                     <TableCell className="text-right font-medium">{r.systolic}</TableCell>
                                     <TableCell className="text-right font-medium">{r.diastolic}</TableCell>
                                     <TableCell className="text-right font-medium">{r.pulse}</TableCell>
@@ -459,5 +462,3 @@ export default function BloodPressurePage() {
     </div>
   );
 }
-
-    
