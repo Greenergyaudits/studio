@@ -220,6 +220,11 @@ export default function DashboardPage() {
     await signOut(auth);
     router.push('/login');
   };
+  
+  const navigateToPremiumFeature = (path: string) => {
+    setIsMobileMenuOpen(false);
+    router.push(path);
+  }
 
   const sidebarContent = (
     <div className="flex flex-col gap-4">
@@ -237,7 +242,11 @@ export default function DashboardPage() {
 
       <hr className="my-2" />
        <h3 className="px-4 text-sm font-semibold text-muted-foreground">Premium Features</h3>
-      <Button variant="ghost" className="justify-start" onClick={() => !subscription?.bloodPressureManager && setIsUpgradeModalOpen(true)} disabled={isSubscriptionLoading}>
+      <Button 
+        variant="ghost" 
+        className="justify-start" 
+        onClick={() => subscription?.bloodPressureManager ? navigateToPremiumFeature('/dashboard/blood-pressure') : setIsUpgradeModalOpen(true)}
+        disabled={isSubscriptionLoading}>
         <HeartPulse className="mr-2" />
         Blood Pressure
         {!isSubscriptionLoading && !subscription?.bloodPressureManager && <Gem className="ml-auto h-4 w-4 text-accent" />}
