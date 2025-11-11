@@ -128,16 +128,16 @@ const getBpCategory = (systolic: number, diastolic: number) => {
 
 function CategoriesInfoSheet() {
   return (
-    <Sheet>
-      <SheetTrigger asChild>
+    <Dialog>
+      <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
           <Info className="h-5 w-5" />
         </Button>
-      </SheetTrigger>
-      <SheetContent side="bottom" className="rounded-t-lg">
-        <SheetHeader className="text-center">
-          <SheetTitle>Blood Pressure Categories</SheetTitle>
-        </SheetHeader>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Blood Pressure Categories</DialogTitle>
+        </DialogHeader>
         <div className="py-4 space-y-4">
           {Object.values(bpCategories).map(category => (
             <div key={category.label} className="flex items-center gap-4">
@@ -149,8 +149,8 @@ function CategoriesInfoSheet() {
             </div>
           ))}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 

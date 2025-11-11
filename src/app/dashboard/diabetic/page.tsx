@@ -12,6 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,7 +27,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Loader2, Plus, ArrowLeft, Trash2, LineChart, Calendar } from 'lucide-react';
+import { Loader2, Plus, ArrowLeft, Trash2, LineChart, Calendar, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -63,6 +65,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   glucoseLevel: z.coerce.number().min(0, "Invalid").max(1000, "Invalid"),
@@ -79,10 +82,50 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const diabeticCategories = [
+    { label: "Normal (Fasting)", range: "70-99 mg/dL", color: "bg-green-500" },
+    { label: "Normal (Post-Meal)", range: "< 140 mg/dL", color: "bg-green-500" },
+    { label: "Elevated (Prediabetes)", range: "100-125 mg/dL (Fasting)", color: "bg-yellow-500" },
+    { label: "High (Diabetes)", range: ">= 126 mg/dL (Fasting)", color: "bg-red-500" },
+    { label: "Low (Hypoglycemia)", range: "< 70 mg/dL", color: "bg-blue-500" },
+];
+
+function DiabeticCategoriesInfoDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Standard Diabetic Reading Ranges</DialogTitle>
+          <DialogDescription>
+            These are general guidelines. Consult your healthcare provider for personalized advice.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          {diabeticCategories.map(category => (
+            <div key={category.label} className="flex items-center gap-4">
+              <span className={cn("h-4 w-4 rounded-full", category.color)}></span>
+              <div>
+                <p className="font-semibold">{category.label}</p>
+                <p className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: category.range }}></p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <DialogFooter>
+           <DialogClose asChild>
+             <Button>Close</Button>
+           </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
   const { user } = useUser();
   const firestore = useFirestore();
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -106,92 +149,100 @@ function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange:
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Glucose Reading</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleAddReading)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="glucoseLevel"
-              render={({ field }) => (
-                <FormItem className="text-center">
-                  <FormLabel>Glucose Level (mg/dL)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      className="text-center text-3xl h-20 font-bold"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+    <>
+      <DiabeticCategoriesInfoDialog open={isInfoOpen} onOpenChange={setIsInfoOpen} />
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Glucose Reading</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleAddReading)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="glucoseLevel"
+                render={({ field }) => (
+                  <FormItem className="text-center">
+                     <div className="flex items-center justify-center gap-2">
+                        <FormLabel>Glucose Level (mg/dL)</FormLabel>
+                        <Button variant="ghost" size="icon" type="button" className="h-6 w-6 text-muted-foreground" onClick={() => setIsInfoOpen(true)}>
+                            <Info className="h-5 w-5" />
+                        </Button>
+                    </div>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        className="text-center text-3xl h-20 font-bold"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="readingType"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Reading Type</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="fasting" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Fasting</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="post-meal" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Post-Meal</FormLabel>
-                      </FormItem>
-                       <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="random" />
-                        </FormControl>
-                        <FormLabel className="font-normal">Random</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="readingType"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Reading Type</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex space-x-4"
+                      >
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="fasting" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Fasting</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="post-meal" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Post-Meal</FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-2 space-y-0">
+                          <FormControl>
+                            <RadioGroupItem value="random" />
+                          </FormControl>
+                          <FormLabel className="font-normal">Random</FormLabel>
+                        </FormItem>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="timestamp"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date & Time</FormLabel>
-                  <FormControl>
-                    <Button variant="outline" type="button" className="w-full justify-start text-left font-normal">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {format(field.value, "PPP HH:mm")}
-                    </Button>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="timestamp"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date & Time</FormLabel>
+                    <FormControl>
+                      <Button variant="outline" type="button" className="w-full justify-start text-left font-normal">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {format(field.value, "PPP HH:mm")}
+                      </Button>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
 
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit">Save Reading</Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+                <Button type="submit">Save Reading</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
