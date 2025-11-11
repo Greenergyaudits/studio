@@ -76,17 +76,15 @@ export default function DashboardPage() {
   const router = useRouter();
   const firestore = useFirestore();
 
-  const userProfileRef = useMemoFirebase(
-    () => (user ? doc(firestore, 'users', user.uid) : null),
-    [user, firestore]
-  );
-  const { data: userProfile, isLoading: isUserLoadingProfile } = useDoc<{subscriptionId: string}>(userProfileRef);
-
-  const subscriptionRef = useMemoFirebase(
-    () => (userProfile?.subscriptionId ? doc(firestore, 'subscriptions', userProfile.subscriptionId) : null),
-    [userProfile]
-  );
-  const { data: subscription, isLoading: isSubscriptionLoading } = useDoc<Subscription>(subscriptionRef);
+  // SIMULATE PREMIUM SUBSCRIPTION
+  const subscription: Subscription | null = {
+      id: 'simulated-premium-sub',
+      subscriptionType: 'Premium',
+      maxMedicines: 999,
+      bloodPressureManager: true,
+      diabeticManager: true,
+  };
+  const isSubscriptionLoading = false;
 
 
   const medicinesQuery = useMemoFirebase(
@@ -192,7 +190,7 @@ export default function DashboardPage() {
         if (m.active === false) return false;
         if (m.course) {
             const startDate = new Date(m.course.startDate);
-            const endDate = addDays(startDate, m.course.durationDays);
+            const endDate = addDays(startDate, med.course.durationDays);
             return differenceInDays(endDate, new Date()) >= 0;
         }
         return true;
@@ -266,7 +264,7 @@ export default function DashboardPage() {
     window.open(whatsappUrl, '_blank');
   };
 
-  if (isUserLoading || isUserLoadingProfile || isSubscriptionLoading) {
+  if (isUserLoading || isSubscriptionLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -439,7 +437,7 @@ export default function DashboardPage() {
           <section>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="font-headline text-2xl font-semibold">
-                My Medications ({medicines?.length || 0} / {subscription?.maxMedicines})
+                My Medications ({medicines?.length || 0})
               </h2>
             </div>
             {isMedicinesLoading ? (
