@@ -12,6 +12,10 @@ service cloud.firestore {
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
+    
+    function isAdmin() {
+      return request.auth.token.email == 'atif.adeel.1981@gmail.com';
+    }
 
     // Get user's subscription data
     function getSubscription(userId) {
@@ -32,16 +36,16 @@ service cloud.firestore {
     match /users/{userId}/medicines/{medicineId} {
       allow read, delete: if isOwner(userId);
       allow write: if isOwner(userId) && 
-                      (getSubscriptionDetails(getSubscription(userId)).subscriptionType == 'Premium' || 
+                      (isAdmin() || getSubscriptionDetails(getSubscription(userId)).subscriptionType == 'Premium' || 
                       list(/databases/$(database)/documents/users/$(userId)/medicines).size() < getSubscriptionDetails(getSubscription(userId)).maxMedicines);
     }
 
     match /users/{userId}/bloodPressureReadings/{readingId} {
-        allow read, write, delete: if isOwner(userId) && getSubscriptionDetails(getSubscription(userId)).bloodPressureManager == true;
+        allow read, write, delete: if isOwner(userId) && (isAdmin() || getSubscriptionDetails(getSubscription(userId)).bloodPressureManager == true);
     }
 
     match /users/{userId}/diabeticReadings/{readingId} {
-        allow read, write, delete: if isOwner(userId) && getSubscriptionDetails(getSubscription(userId)).diabeticManager == true;
+        allow read, write, delete: if isOwner(userId) && (isAdmin() || getSubscriptionDetails(getSubscription(userId)).diabeticManager == true);
     }
 
     match /subscriptions/{subscriptionId} {
@@ -52,5 +56,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
