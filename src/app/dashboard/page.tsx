@@ -40,6 +40,35 @@ import {
 import { getAuth, signOut } from 'firebase/auth';
 
 
+const DEMO_MEDICATIONS: Omit<Medication, 'id' | 'userId'>[] = [
+    {
+        name: 'Aspirin',
+        quantity: 50,
+        dose_times: ['08:00'],
+        active: true,
+        instructions: 'Take with food.'
+    },
+    {
+        name: 'Vitamin D',
+        quantity: 3,
+        dose_times: ['09:00'],
+        active: true,
+        instructions: 'Take with breakfast.'
+    },
+    {
+        name: 'Antibiotic',
+        quantity: 14,
+        dose_times: ['10:00', '22:00'],
+        active: true,
+        instructions: 'Finish the full course.',
+        course: {
+            durationDays: 7,
+            startDate: new Date().toISOString()
+        }
+    }
+];
+
+
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
@@ -62,6 +91,18 @@ export default function DashboardPage() {
       router.replace('/login');
     }
   }, [user, isUserLoading, router]);
+
+  useEffect(() => {
+    if (user?.isAnonymous && medicines?.length === 0 && !isMedicinesLoading) {
+        const medRef = collection(firestore, 'users', user.uid, 'medicines');
+        DEMO_MEDICATIONS.forEach(async (med) => {
+            await addDoc(medRef, {
+                ...med,
+                userId: user.uid
+            });
+        });
+    }
+  }, [user, medicines, isMedicinesLoading, firestore]);
 
   useEffect(() => {
     const getContact = () => {
@@ -263,13 +304,13 @@ export default function DashboardPage() {
                 <Button variant="secondary" size="icon" className="rounded-full">
                   <Avatar>
                     <AvatarImage src={user?.photoURL ?? undefined} />
-                    <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{user?.isAnonymous ? 'G' : user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <span className="sr-only">Toggle user menu</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>{user?.isAnonymous ? 'Guest Account' : 'My Account'}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem disabled>Settings</DropdownMenuItem>
                 <DropdownMenuItem disabled>Support</DropdownMenuItem>
@@ -359,3 +400,5 @@ export default function DashboardPage() {
 
     
 }
+
+    

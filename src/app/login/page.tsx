@@ -221,15 +221,18 @@ export default function LoginPage() {
             </span>
           </div>
         </div>
+        
+        <div className="space-y-2">
+          <Button onClick={handleGoogleSignIn} className="w-full" variant="outline" size="lg" disabled={isSubmitting}>
+            <FcGoogle className="mr-2 h-5 w-5" />
+            Sign In with Google
+          </Button>
 
-        <Button onClick={handleGoogleSignIn} className="w-full" variant="outline" size="lg" disabled={isSubmitting}>
-          <FcGoogle className="mr-2 h-5 w-5" />
-          Sign In with Google
-        </Button>
+          <Button onClick={handleAnonymousSignIn} className="w-full" variant="secondary" size="lg" disabled={isSubmitting}>
+              Skip for now and use Test Version
+          </Button>
+        </div>
 
-        <Button onClick={handleAnonymousSignIn} className="w-full" variant="link" disabled={isSubmitting}>
-            Skip for now
-        </Button>
 
         <p className="px-8 text-center text-sm text-muted-foreground">
           By clicking continue, you agree to our{" "}
@@ -246,3 +249,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
