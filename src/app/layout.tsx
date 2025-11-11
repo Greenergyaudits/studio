@@ -16,6 +16,7 @@ const ptSans = PT_Sans({
 export const metadata: Metadata = {
   title: 'MEDIC REMINDER',
   description: 'Your personal assistant for staying on top of your medication schedule and supplies.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
