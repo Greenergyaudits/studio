@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, Timestamp, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import type { BloodPressureReading } from '@/lib/types';
@@ -14,7 +14,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -26,7 +26,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Loader2, Plus, ArrowLeft, Trash2, LineChart } from 'lucide-react';
+import { Loader2, Plus, ArrowLeft, Trash2, LineChart, Calendar, Info, Armchair, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -63,13 +63,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { NumberCarousel, NumberCarouselContent } from '@/components/ui/number-carousel';
+import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 const formSchema = z.object({
-  systolic: z.coerce.number().min(50, 'Invalid value').max(300, 'Invalid value'),
-  diastolic: z.coerce.number().min(30, 'Invalid value').max(200, 'Invalid value'),
-  pulse: z.coerce.number().min(30, 'Invalid value').max(250, 'Invalid value'),
+  systolic: z.coerce.number().min(50).max(300),
+  diastolic: z.coerce.number().min(30).max(200),
+  pulse: z.coerce.number().min(30).max(250),
+  description: z.string().optional(),
+  timestamp: z.date().default(new Date()),
 });
+
+type FormData = z.infer<typeof formSchema>;
 
 const chartConfig = {
   systolic: {
@@ -86,6 +93,159 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const bpCategories = {
+    NORMAL: { label: "Normal", color: "bg-green-500", range: "SYS < 120 and DIA < 80" },
+    ELEVATED: { label: "Elevated", color: "bg-yellow-500", range: "SYS 120-129 and DIA < 80" },
+    HYPERTENSION_1: { label: "Hypertension Stage 1", color: "bg-orange-500", range: "SYS 130-139 or DIA 80-89" },
+    HYPERTENSION_2: { label: "Hypertension Stage 2", color: "bg-red-500", range: "SYS >= 140 or DIA >= 90" },
+    HYPERTENSIVE_CRISIS: { label: "Hypertensive Crisis", color: "bg-red-700", range: "SYS > 180 and/or DIA > 120" },
+};
+
+const getBpCategory = (systolic: number, diastolic: number) => {
+    if (systolic > 180 || diastolic > 120) return bpCategories.HYPERTENSIVE_CRISIS;
+    if (systolic >= 140 || diastolic >= 90) return bpCategories.HYPERTENSION_2;
+    if (systolic >= 130 || diastolic >= 80) return bpCategories.HYPERTENSION_1;
+    if (systolic >= 120) return bpCategories.ELEVATED;
+    return bpCategories.NORMAL;
+}
+
+function AddReadingDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      systolic: 120,
+      diastolic: 80,
+      pulse: 70,
+      description: "",
+      timestamp: new Date(),
+    },
+  });
+
+  const { systolic, diastolic } = form.watch();
+  const bpCategory = getBpCategory(systolic, diastolic);
+
+  const handleAddReading = async (values: FormData) => {
+    if (!user) return;
+    const readingRef = collection(firestore, 'users', user.uid, 'bloodPressureReadings');
+    await addDoc(readingRef, {
+      ...values,
+      userId: user.uid,
+      timestamp: values.timestamp.getTime().toString(),
+    });
+    onOpenChange(false);
+    form.reset();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md p-0">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleAddReading)}>
+            <DialogHeader className="p-6 pb-0">
+              <DialogTitle>Blood Pressure</DialogTitle>
+            </DialogHeader>
+            <div className="p-6 space-y-4">
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input placeholder="Add description" className="border-0 border-b rounded-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0" {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="timestamp"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Button variant="outline" type="button" className="w-full justify-start text-left font-normal">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {format(field.value, "PPP HH:mm")}
+                      </Button>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <div className={cn("p-4 rounded-lg flex items-center gap-4", bpCategory.color.replace('bg-', 'bg-opacity-10 dark:bg-opacity-20 border border-'))}>
+                <span className={cn("h-3 w-3 rounded-full", bpCategory.color)}></span>
+                <div className="flex-1">
+                  <p className="font-semibold">{bpCategory.label}</p>
+                  <p className="text-sm text-muted-foreground">{bpCategory.range}</p>
+                </div>
+                 <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-5 w-5 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Blood pressure categories are based on AHA guidelines.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
+              <div className="flex justify-between items-start pt-4">
+                <div className="flex flex-col items-center gap-2">
+                  <FormLabel>Systolic</FormLabel>
+                  <span className="text-sm text-muted-foreground">mm Hg</span>
+                   <Controller
+                    control={form.control}
+                    name="systolic"
+                    render={({ field }) => (
+                        <NumberCarousel value={field.value} setValue={field.onChange} range={[50, 300]} />
+                    )}
+                   />
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <FormLabel>Diastolic</FormLabel>
+                  <span className="text-sm text-muted-foreground">mm Hg</span>
+                   <Controller
+                    control={form.control}
+                    name="diastolic"
+                    render={({ field }) => (
+                        <NumberCarousel value={field.value} setValue={field.onChange} range={[30, 200]} />
+                    )}
+                   />
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <FormLabel>Pulse</FormLabel>
+                   <span className="text-sm text-muted-foreground">BPM</span>
+                   <Controller
+                    control={form.control}
+                    name="pulse"
+                    render={({ field }) => (
+                        <NumberCarousel value={field.value} setValue={field.onChange} range={[30, 250]} />
+                    )}
+                   />
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-medium text-sm mb-2">Add details</h4>
+                <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" type="button" size="sm"><Plus className="h-4 w-4 mr-1"/> Arm</Button>
+                    <Button variant="outline" type="button" size="sm"><Plus className="h-4 w-4 mr-1"/> Position</Button>
+                    <Button variant="outline" type="button" size="sm"><Plus className="h-4 w-4 mr-1"/> Conditions</Button>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="p-6 bg-muted/40">
+              <Button type="submit" className="w-full">Done</Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 
 export default function BloodPressurePage() {
   const { user } = useUser();
@@ -101,27 +261,6 @@ export default function BloodPressurePage() {
     [user, firestore]
   );
   const { data: readings, isLoading } = useCollection<BloodPressureReading>(bpQuery);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      systolic: 120,
-      diastolic: 80,
-      pulse: 70,
-    },
-  });
-
-  const handleAddReading = async (values: z.infer<typeof formSchema>) => {
-    if (!user) return;
-    const readingRef = collection(firestore, 'users', user.uid, 'bloodPressureReadings');
-    await addDoc(readingRef, {
-      ...values,
-      userId: user.uid,
-      timestamp: Timestamp.now().toMillis().toString(),
-    });
-    setIsAddOpen(false);
-    form.reset();
-  };
 
   const handleDeleteReading = async (readingId: string) => {
     if (!user) return;
@@ -141,6 +280,7 @@ export default function BloodPressurePage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
+        <AddReadingDialog open={isAddOpen} onOpenChange={setIsAddOpen} />
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-2">
             <Button size="icon" variant="outline" className="sm:hidden" onClick={() => router.back()}>
               <ArrowLeft className="h-5 w-5" />
@@ -211,7 +351,6 @@ export default function BloodPressurePage() {
                                     strokeWidth={2}
                                     dot={{ fill: "var(--color-pulse)" }}
                                     activeDot={{ r: 6 }}
-                                    yAxisId="pulse"
                                 />
                                 </RechartsLineChart>
                             </ChartContainer>
@@ -289,62 +428,6 @@ export default function BloodPressurePage() {
                 </Card>
             </div>
       </main>
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Blood Pressure Reading</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleAddReading)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="systolic"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Systolic (SYS)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="diastolic"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Diastolic (DIA)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="pulse"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pulse</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setIsAddOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Save</Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
