@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Plus, ArrowLeft, Trash2, LineChart, Calendar, Info, ChevronRight } from 'lucide-react';
+import { Loader2, Plus, ArrowLeft, Trash2, LineChart, Calendar, Info, ChevronRight, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -73,6 +73,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ArmSelectionDialog, PositionSelectionDialog, ConditionsSelectionDialog } from '@/components/blood-pressure-details-dialogs';
 import { Badge } from '@/components/ui/badge';
+import Papa from 'papaparse';
 
 
 const formSchema = z.object({
@@ -395,6 +396,34 @@ export default function BloodPressurePage() {
       date: format(r.timestamp, 'MMM d, HH:mm'),
     }));
   }, [readings]);
+  
+  const handleDownloadCsv = () => {
+    if (!chartData) return;
+
+    const csvData = chartData.map(r => ({
+      "Date": format(r.timestamp, 'yyyy-MM-dd'),
+      "Time": format(r.timestamp, 'HH:mm'),
+      "Systolic (mmHg)": r.systolic,
+      "Diastolic (mmHg)": r.diastolic,
+      "Pulse (BPM)": r.pulse,
+      "Arm": r.arm,
+      "Position": r.position,
+      "Meal Condition": r.conditions?.meal,
+      "Medicine Condition": r.conditions?.medicine,
+      "Activity Condition": r.conditions?.activity,
+    }));
+    
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'blood_pressure_report.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
 
   return (
@@ -408,9 +437,13 @@ export default function BloodPressurePage() {
             <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
               Blood Pressure Manager
             </h1>
-            <div className="relative ml-auto flex-1 md:grow-0">
+            <div className="relative ml-auto flex-1 md:grow-0 flex items-center gap-2">
                 <Button onClick={() => setIsAddOpen(true)} className="w-full">
                     <Plus className="mr-2 h-4 w-4" /> Add Reading
+                </Button>
+                 <Button onClick={handleDownloadCsv} variant="outline" size="icon" disabled={!chartData || chartData.length === 0}>
+                    <Download className="h-4 w-4" />
+                    <span className="sr-only">Download Report</span>
                 </Button>
             </div>
       </header>
