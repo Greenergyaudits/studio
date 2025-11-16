@@ -23,6 +23,13 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    // *** YEH ZAROORI CHANGE HAI JO TRAFFIC KO NEXT.JS SERVER (FUNCTION) TAK BHEJEGA ***
+    "rewrites": [
+      {
+        "source": "**",
+        "function": "web" 
+      }
     ]
   }
 }
