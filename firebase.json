@@ -28,7 +28,7 @@
     "rewrites": [
       {
         "source": "**",
-        "function": "web" 
+        "function": "SERVER" 
       }
     ]
   }
