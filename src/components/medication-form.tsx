@@ -64,7 +64,7 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove } = useFieldArray<z.infer<typeof formSchema>>({
     control: form.control,
     name: 'dose_times',
   });
