@@ -1,13 +1,6 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   images: {
     remotePatterns: [
       {
@@ -30,8 +23,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // The devServer option is not valid for production builds.
-  // The cross-origin issue is handled by Firebase Studio's environment.
 };
 
 export default nextConfig;
