@@ -29,7 +29,7 @@ export function RefillPredictor({ medication }: RefillPredictorProps) {
     // The action expects a plain Medication object, not WithId
     const { id, ...medData } = medication;
     const result = await getRefillPrediction(medData as Medication);
-    if (result.success) {
+    if (result.success && result.data) {
       setPrediction(result.data);
     } else {
       // Don't show an error, just log it for debugging.
