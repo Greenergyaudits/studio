@@ -111,8 +111,10 @@ export function MedicationCard({ medication, onUpdate, onDelete }: MedicationCar
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="sm:justify-between">
-                      <AlertDialogAction onClick={handleToggleActive} variant="outline">
-                        <EyeOff className="mr-2"/> Disable
+                      <AlertDialogAction asChild>
+                        <Button onClick={handleToggleActive} variant="outline">
+                          <EyeOff className="mr-2"/> Disable
+                        </Button>
                       </AlertDialogAction>
                       <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-2 sm:mt-0">
                          <AlertDialogCancel>Cancel</AlertDialogCancel>
