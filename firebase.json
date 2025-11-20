@@ -1,4 +1,5 @@
 {
+  "__comment": "This file is configured for the medic-minder-f4dc5 project.",
   "hosting": {
     "public": "out",
     "ignore": [
