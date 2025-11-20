@@ -30,6 +30,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Add this configuration to allow requests from the development environment
+  devServer: {
+    allowedDevOrigins: ["https://*.cloudworkstations.dev"],
+  },
 };
 
 export default nextConfig;
