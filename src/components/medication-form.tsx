@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useForm, useFieldArray, Control } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import type { Medication } from '@/lib/types';
@@ -24,6 +25,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { WithId } from '@/firebase';
 
+const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+
 const formSchema = z.object({
   name: z.string().min(2, {
     message: 'Medication name must be at least 2 characters.',
@@ -32,9 +35,12 @@ const formSchema = z.object({
     message: 'Quantity must be a positive number.',
   }),
   expiryDate: z.string().optional(),
-  dose_times: z.array(
-    z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format (HH:MM)')
-  ).min(0),
+  dose_times: z.array(z.any()).refine(
+    (times) => times.every((time) => typeof time === 'string' && timeRegex.test(time)),
+    {
+      message: 'One or more times are in an invalid format (HH:MM)',
+    }
+  ),
   active: z.boolean().default(true),
   instructions: z.string().optional(),
   courseDuration: z.coerce.number().min(0).optional(),
