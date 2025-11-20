@@ -68,7 +68,7 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "dose_times",
+    name: 'dose_times',
   });
 
   const watchIsOngoing = form.watch('isOngoing');
