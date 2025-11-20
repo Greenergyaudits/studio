@@ -30,10 +30,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Add this configuration to allow requests from the development environment
-  devServer: {
-    allowedDevOrigins: ["https://*.cloudworkstations.dev"],
-  },
+  // The devServer option is not valid for production builds.
+  // The cross-origin issue is handled by Firebase Studio's environment.
 };
 
 export default nextConfig;
