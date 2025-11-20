@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { getAuth, signOut, sendPasswordResetEmail, updateProfile, type User as FirebaseUser } from 'firebase/auth';
 
+export const dynamic = 'force-dynamic';
 
 const DEMO_MEDICATIONS: Omit<Medication, 'id' | 'userId'>[] = [
     {
