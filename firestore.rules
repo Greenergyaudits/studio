@@ -28,23 +28,29 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // On create, a new user document is created with a subscriptionId
+      // Allow a user to be created.
       allow create: if isSignedIn() && request.auth.uid == userId;
+      // Allow a user to read their own document for profile info.
       allow read, update: if isOwner(userId);
+      // Allow other rules to GET this document to check permissions.
+      allow get: if isSignedIn();
     }
 
     match /users/{userId}/medicines/{medicineId} {
       allow read, delete: if isOwner(userId);
+      // Allow write if user is owner AND (is admin OR is premium OR has not reached basic medicine limit)
       allow write: if isOwner(userId) && 
                       (isAdmin() || getSubscriptionDetails(getUserSubscriptionId(userId)).subscriptionType == 'Premium' || 
-                      list(/databases/$(database)/documents/users/$(userId)/medicines).size() < getSubscriptionDetails(getUserSubscriptionId(userId)).maxMedicines);
+                      list(/databases/$(database)/documents/users/$(userId)/medicines,).size() < getSubscriptionDetails(getUserSubscriptionId(userId)).maxMedicines);
     }
 
     match /users/{userId}/bloodPressureReadings/{readingId} {
+        // Allow access if the user is the owner AND (is admin OR has the blood pressure feature enabled)
         allow read, write, delete: if isOwner(userId) && (isAdmin() || getSubscriptionDetails(getUserSubscriptionId(userId)).bloodPressureManager == true);
     }
 
     match /users/{userId}/diabeticReadings/{readingId} {
+        // Allow access if the user is the owner AND (is admin OR has the diabetic manager feature enabled)
         allow read, write, delete: if isOwner(userId) && (isAdmin() || getSubscriptionDetails(getUserSubscriptionId(userId)).diabeticManager == true);
     }
 
