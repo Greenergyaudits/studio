@@ -42,6 +42,8 @@ const formSchema = z.object({
   isOngoing: z.boolean().default(true),
 });
 
+type MedicationFormData = z.infer<typeof formSchema>;
+
 type MedicationFormProps = {
   medication?: WithId<Medication>;
   onSubmit: (data: Partial<Medication>) => void;
@@ -49,7 +51,7 @@ type MedicationFormProps = {
 };
 
 export function MedicationForm({ medication, onSubmit, onClose }: MedicationFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<MedicationFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: medication?.name || '',
@@ -64,7 +66,7 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
     },
   });
 
-  const { fields, append, remove } = useFieldArray<z.infer<typeof formSchema>>({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'dose_times',
   });
@@ -81,7 +83,7 @@ export function MedicationForm({ medication, onSubmit, onClose }: MedicationForm
   }, [watchIsOngoing, form]);
 
 
-  function handleFormSubmit(values: z.infer<typeof formSchema>) {
+  function handleFormSubmit(values: MedicationFormData) {
     const output: Partial<Medication> = {
       ...values,
       id: medication?.id || '',
