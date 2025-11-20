@@ -17,8 +17,8 @@ service cloud.firestore {
       return request.auth.token.email == 'atif.adeel.1981@gmail.com';
     }
 
-    // Get user's subscription data
-    function getSubscription(userId) {
+    // Get user's subscription data from their own user document
+    function getUserSubscriptionId(userId) {
       return get(/databases/$(database)/documents/users/$(userId)).data.subscriptionId;
     }
 
@@ -36,22 +36,22 @@ service cloud.firestore {
     match /users/{userId}/medicines/{medicineId} {
       allow read, delete: if isOwner(userId);
       allow write: if isOwner(userId) && 
-                      (isAdmin() || getSubscriptionDetails(getSubscription(userId)).subscriptionType == 'Premium' || 
-                      list(/databases/$(database)/documents/users/$(userId)/medicines).size() < getSubscriptionDetails(getSubscription(userId)).maxMedicines);
+                      (isAdmin() || getSubscriptionDetails(getUserSubscriptionId(userId)).subscriptionType == 'Premium' || 
+                      list(/databases/$(database)/documents/users/$(userId)/medicines).size() < getSubscriptionDetails(getUserSubscriptionId(userId)).maxMedicines);
     }
 
     match /users/{userId}/bloodPressureReadings/{readingId} {
-        allow read, write, delete: if isOwner(userId) && (isAdmin() || getSubscriptionDetails(getSubscription(userId)).bloodPressureManager == true);
+        allow read, write, delete: if isOwner(userId) && (isAdmin() || getSubscriptionDetails(getUserSubscriptionId(userId)).bloodPressureManager == true);
     }
 
     match /users/{userId}/diabeticReadings/{readingId} {
-        allow read, write, delete: if isOwner(userId) && (isAdmin() || getSubscriptionDetails(getSubscription(userId)).diabeticManager == true);
+        allow read, write, delete: if isOwner(userId) && (isAdmin() || getSubscriptionDetails(getUserSubscriptionId(userId)).diabeticManager == true);
     }
 
     match /subscriptions/{subscriptionId} {
-      allow read: if isSignedIn();
-      // Only backend can create/update subscriptions. This is a simplified rule.
-      // In a real app, this would be handled by a Cloud Function with admin privileges.
+      // Allow a user to read a subscription document if its ID matches the one in their own user document.
+      allow read: if isSignedIn() && subscriptionId == getUserSubscriptionId(request.auth.uid);
+      // Only backend should create/update subscriptions. This is correct.
       allow write: if false; 
     }
   }
